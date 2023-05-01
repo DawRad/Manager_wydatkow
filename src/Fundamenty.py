@@ -22,3 +22,12 @@ class Zasob(Obiekt):
     @classmethod
     def resetujLicznikZasobow(cls):
         Zasob.__liczObZas_ = dict()
+
+    @classmethod
+    def dodajRodzZasobow(cls, rodzaje: list[str]):
+        for rodzaj in rodzaje:
+            if Zasob.__liczObZas_.get(rodzaj) == None: Zasob.__liczObZas_[rodzaj] = 0
+
+    @classmethod
+    def wypiszRodzajeZasobow(cls):
+        for [klucz, wart] in Zasob.__liczObZas_.items(): print("Rodzaj: ", klucz, "\nLiczba instancji: ", wart, "\n")            
