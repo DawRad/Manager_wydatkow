@@ -22,7 +22,7 @@ class Obiekt:
 class Zasob(Obiekt):
     __liczObZas_ = dict()
 
-    def __init__(self, rodzaj: str, kwota: float, waluta) -> None:
+    def __init__(self, rodzaj: str, kwota: float, waluta = "PLN") -> None:
         if self.__liczObZas_.get(rodzaj) != None: self.__liczObZas_[rodzaj] += 1
         else: self.__liczObZas_[rodzaj] = 1
         super().__init__(self.__liczObZas_[rodzaj])
