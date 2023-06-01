@@ -74,34 +74,6 @@ class Wydatek(Obiekt):
 
 """
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
-| - - - - - ***Klasa Paragon*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
-| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
-"""
-class Paragon(Obiekt):
-    def __init__(self, idx: int, data: dtm.date, miejsce = "nieznane", pozycje = [Wydatek(1, 999.99)]) -> None:
-        super().__init__(idx)
-        self.__data_ = data
-        self.__miejsce_ = miejsce
-        self.__pozycje_ = pozycje
-
-    def __str__(self) -> str:
-        lista_pozycji = str("")
-        for pozycja in self.__pozycje_: lista_pozycji += pozycja.__str__() + "\n- - - - -\n"
-        lista_pozycji = lista_pozycji.removesuffix("\n- - - - -\n")
-
-        return super().__str__() + "\nData: " + self.__data_.__str__() + "\nMiejsce: " + self.__miejsce_ + "\n\nLista wydatków:\n" + lista_pozycji
-    
-    def dodajPozycje(self, pozycja: Wydatek) -> None:
-        self.__pozycje_.append(pozycja)
-
-    def sumujWydatki(self) -> float:
-        suma = 0.0
-        for wydatek in self.__pozycje_: suma += wydatek.podajCene()
-        return suma
-
-
-"""
-| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
 | - - - - - ***Klasa TabWydatki*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
 """
