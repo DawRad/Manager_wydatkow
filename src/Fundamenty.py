@@ -55,25 +55,6 @@ class Zasob(Obiekt):
 
 """
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
-| - - - - - ***Klasa Wydatek*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
-| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
-"""
-class Wydatek(Obiekt):
-    def __init__(self, idx: int, cena: float, nazwa = "inne", dzial = "inny") -> None:
-        super().__init__(idx)
-        self.__cena_ = cena
-        self.__dzial_ = dzial
-        self.__nazwa_ = nazwa
-
-    def __str__(self) -> str:
-        return super().__str__() + "\nDział: " + str(self.__dzial_) + "\nNazwa: " + self.__nazwa_ + "\nCena: " + str(self.__cena_)
-    
-    def podajCene(self) -> float:
-        return self.__cena_
-
-
-"""
-| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
 | - - - - - ***Klasa TabWydatki*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
 """
