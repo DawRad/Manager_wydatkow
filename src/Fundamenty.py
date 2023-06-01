@@ -1,4 +1,5 @@
 import datetime as dtm
+import pandas as pd
 
 
 """
@@ -97,3 +98,36 @@ class Paragon(Obiekt):
         suma = 0.0
         for wydatek in self.__pozycje_: suma += wydatek.podajCene()
         return suma
+
+
+"""
+| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
+| - - - - - ***Klasa TabWydatki*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
+| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
+"""
+
+class TabWydatki(Obiekt):
+    def __init__(self, idx: int, nazwa: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
+        super().__init__(idx)
+        self.__nazwa_ = nazwa
+        self.__tabela_ = pd.DataFrame(columns=kolumny)        
+
+    def podajNazwyKol(self):
+        return self.__tabela_.columns
+    
+
+"""
+| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
+| - - - - - ***Klasa Posiadacz*** - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - |
+| - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
+"""
+class Posiadacz(Obiekt):
+    def __init__(self, idx: int, imie: str, nazwisko: str) -> None:
+        super().__init__(idx)
+        self.__tabWydatki_ = list(TabWydatki)
+        self.__imie_ = imie
+        self.__nazwisko_ = nazwisko
+        self.__zasoby_ = list(Zasob)
+
+    def dodajTab(self, tabela: TabWydatki):
+        self.__tabWydatki_.append(tabela)     
