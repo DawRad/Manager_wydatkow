@@ -64,3 +64,20 @@ class Interfejs:
 
     def drukujTabWydatki(self, nazwa):
         print(self.__posiadacze_[self.__posiadaczPos_].podajTabDF(nazwa))
+
+    def podajListePosiadaczy(self):
+        out_list = []
+        for posiadacz in self.__posiadacze_:
+            dane = posiadacz.podajImieINazw()
+            out_list.append(dane[0] + " " + dane[1])
+
+        return out_list
+    
+    def podajListeNazwTabWydatkow(self):
+        return self.__posiadacze_[self.__posiadaczPos_].podajNazwyTabWydatkow()
+    
+    '''
+    W tym przypadku chodzi o posiadacza na aktualnie ustawionej pozycji na liście
+    '''
+    def podajDanePosiadacza(self):
+        return self.__posiadacze_[self.__posiadaczPos_].podajImieINazw()

@@ -100,6 +100,15 @@ class Posiadacz(Obiekt):
     def podajHash(self):
         return self.__hash_
     
+    def podajImieINazw(self):
+        return [self.__imie_, self.__nazwisko_]
+    
+    def podajNazwyTabWydatkow(self):
+        out_list = []
+        for tab in self.__tabWydatki_: out_list.append(tab.podajNazwe())
+
+        return out_list
+    
     def podajTabDF(self, nazwa_tab: str):
         for tabela in self.__tabWydatki_:
             if tabela.podajNazwe() == nazwa_tab: return tabela.podajDF()
