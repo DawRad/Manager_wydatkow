@@ -2,7 +2,7 @@ from Fundamenty import *
 
 class Interfejs:
     def __init__(self) -> None:
-        self.__posiadacze_ = list(Posiadacz)
+        self.__posiadacze_ = list()
     
     def utworzPosiadacza(self, imie = "Jan", nazwisko = "Kowalski"):
         self.__posiadacze_.append(Posiadacz(imie, nazwisko))
