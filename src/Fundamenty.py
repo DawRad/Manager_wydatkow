@@ -8,8 +8,8 @@ import pandas as pd
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
 """
 class Obiekt:
-    def __init__(self, idx: int) -> None:
-        self.nrPorz_ = idx
+    def __init__(self) -> None:
+        pass
 
     def __str__(self) -> str:
         return "Indeks: " + str(self.nrPorz_)
@@ -60,13 +60,16 @@ class Zasob(Obiekt):
 """
 
 class TabWydatki(Obiekt):
-    def __init__(self, idx: int, nazwa: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
+    def __init__(self, nazwa: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
         super().__init__(idx)
         self.__nazwa_ = nazwa
         self.__tabela_ = pd.DataFrame(columns=kolumny)        
 
     def podajNazwyKol(self):
         return self.__tabela_.columns
+    
+    def podajNazwe(self):
+        return self.__nazwa_
     
 
 """
@@ -75,12 +78,31 @@ class TabWydatki(Obiekt):
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
 """
 class Posiadacz(Obiekt):
-    def __init__(self, idx: int, imie: str, nazwisko: str) -> None:
-        super().__init__(idx)
-        self.__tabWydatki_ = list(TabWydatki)
+    def __init__(self, imie: str, nazwisko: str) -> None:
+        super().__init__()
+        self.__tabWydatki_ = list()
         self.__imie_ = imie
         self.__nazwisko_ = nazwisko
-        self.__zasoby_ = list(Zasob)
+        self.__zasoby_ = list()
+        self.__hash_ = (self.__imie_ + self.__nazwisko_).lower()
 
+    def podajHash(self):
+        return self.__hash_
+    
     def dodajTab(self, tabela: TabWydatki):
-        self.__tabWydatki_.append(tabela)     
+        self.__tabWydatki_.append(tabela)
+
+    def dodajWierszWTab(self, new_row: list(), nazwa_tab = " "):
+        for tabela in self.__tabWydatki_:
+            if tabela.podajNazwe() == nazwa_tab:
+                target = tabela
+                break
+
+        # target = pd.concat([target, new_row.to_frame().T], ignore_index=True)
+        target.loc[len(target)] = new_row
+
+    def podajNazwyKolWTab(self, nazwa: str):
+        for tab in self.__tabWydatki_:
+            if tab.podajNazwe() == nazwa: return tab.podajNazwyKol()
+
+        return None
