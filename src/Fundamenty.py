@@ -61,7 +61,7 @@ class Zasob(Obiekt):
 
 class TabWydatki(Obiekt):
     def __init__(self, nazwa: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
-        super().__init__(idx)
+        super().__init__()
         self.__nazwa_ = nazwa
         self.__tabela_ = pd.DataFrame(columns=kolumny)        
 
