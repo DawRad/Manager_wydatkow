@@ -81,21 +81,26 @@ class MainWindow:
     def addTabLoop(self):
         add_tab_layout = [
             [
-                sg.Text("Wybrany plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
+                sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
                 sg.FileBrowse(key='-BROWSE-')
             ],
-            [sg.Checkbox("Dołącz do tabeli", metadata="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-")],
+            [sg.Checkbox("Dołącz do tabeli", metadata="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-", change_submits=True, enable_events=True)],
             [
                 sg.Text("Nazwa tabeli", key='-SUBMIT_TEXT-', visible=False),
                 sg.Input(key='-INPUT-', visible=False),
                 sg.Button("Zatwierdź", key='-SUBMIT-', visible=False)
-            ]
+            ],
             [
                 sg.Button("Powrót"),
                 sg.Button("Wczytaj")
             ]
         ]
         add_tab_window = sg.Window("Dodawanie tabeli", add_tab_layout)
+        # add_tab_window.read(timeout=1)
+        # add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
+        # add_tab_window['-INPUT-'].update(visible=True)
+        # add_tab_window['-SUBMIT-'].update(visible=True)
+        # add_tab_window.read(timeout=1)
 
         while True:
             event, values = add_tab_window.read()
@@ -110,5 +115,14 @@ class MainWindow:
                     add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
                     add_tab_window['-INPUT-'].update(visible=True)
                     add_tab_window['-SUBMIT-'].update(visible=True)
+            elif event == '-JOIN_CHECK-':
+                if values['-JOIN_CHECK-'] and add_tab_window['-FILE_PATH-'].get() != 'Wybierz plik':
+                    add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
+                    add_tab_window['-INPUT-'].update(visible=True)
+                    add_tab_window['-SUBMIT-'].update(visible=True)
+                elif not(values['-JOIN_CHECK-']):
+                    add_tab_window['-SUBMIT_TEXT-'].update(visible=False)
+                    add_tab_window['-INPUT-'].update(visible=False)
+                    add_tab_window['-SUBMIT-'].update(visible=False)
 
         add_tab_window.close()
