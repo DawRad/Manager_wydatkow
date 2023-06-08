@@ -5,3 +5,7 @@ class OutOfBondsError(ValueError):
 class BadFileFormatError(ValueError):
     def __init__(self, message) -> None:
         super().__init__(message)
+
+class RepKeyError(ValueError):
+    def __init__(self, message) -> None:
+        super().__init__(message)
