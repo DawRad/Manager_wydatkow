@@ -63,18 +63,15 @@ class TabWydatki(Obiekt):
     '''
     Parametr df -> parametr ty pandas.DataFrame
     '''
-    def __init__(self, nazwa: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], df: pd.DataFrame = None, wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
+    def __init__(self, nazwa_tab: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], df = pd.DataFrame({'A':[]}), wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
         super().__init__()
-        self.__nazwa_ = nazwa
+        self.__nazwa_ = nazwa_tab
 
-        if df != None: self.__tabela_ = df
+        if not df.empty: self.__tabela_ = df
         else: self.__tabela_ = pd.DataFrame(columns=kolumny)      
 
     def podajNazwyKol(self):
         return self.__tabela_.columns
-    
-    def podajNazwe(self):
-        return self.__nazwa_
     
     def podajDF(self):
         return self.__tabela_
@@ -91,10 +88,10 @@ class TabWydatki(Obiekt):
 class Posiadacz(Obiekt):
     def __init__(self, imie: str, nazwisko: str) -> None:
         super().__init__()
-        self.__tabWydatki_ = []
+        self.__tabWydatki_ = {}
         self.__imie_ = imie
         self.__nazwisko_ = nazwisko
-        self.__zasoby_ = []
+        self.__zasoby_ = {}
         self.__hash_ = (self.__imie_ + self.__nazwisko_).lower()
 
     def podajHash(self):
@@ -104,46 +101,43 @@ class Posiadacz(Obiekt):
         return [self.__imie_, self.__nazwisko_]
     
     def podajNazwyTabWydatkow(self):
-        out_list = []
-        for tab in self.__tabWydatki_: out_list.append(tab.podajNazwe())
-
-        return out_list
+        return list(self.__tabWydatki_.keys())
     
+    '''
+    Od tej metody do następnej po niej:
+    Wyżej powinien być zwrócony wyjątek, jeśli tabela o podanej nazwie
+    nie istnieje
+    '''
     def podajTabDF(self, nazwa_tab: str):
-        for tabela in self.__tabWydatki_:
-            if tabela.podajNazwe() == nazwa_tab: return tabela.podajDF()
-
-        return pd.DataFrame({'A' : []})
+        tabela = self.__tabWydatki_.get(nazwa_tab, None)
+        result = tabela.podajDF() if tabela is not None else pd.DataFrame({'A' : []})
+        return result
     
     def podajTab(self, nazwa_tab: str):
-        for tabela in self.__tabWydatki_:
-            if tabela.podajNazwe() == nazwa_tab: return tabela
-
-        return None
+        return self.__tabWydatki_.get(nazwa_tab, None)
     
     def dodajTab(self, tabela: TabWydatki):
         self.__tabWydatki_.append(tabela)
 
     def dodajTabDF(self, nazwa_tab: str, df: pd.DataFrame):
+        # TO-DO: sprawdzenie, czy element o podanym kluczu już nie istnieje
         new_tab = TabWydatki(nazwa_tab, df=df)
-        self.__tabWydatki_.append(new_tab)
+        self.__tabWydatki_[nazwa_tab] = new_tab
 
+    '''
+    Od tej metody we wszystkich dół:
+    Wyżej powinien być zwrócony wyjątek, jeśli tabela o podanej nazwie
+    nie istnieje
+    '''
     def dodajWierszWTab(self, new_row: list, nazwa_tab = " "):
-        for tabela in self.__tabWydatki_:
-            if tabela.podajNazwe() == nazwa_tab:
-                targetTab = tabela.podajDF()
-                break
-
-        # target = pd.concat([target, new_row.to_frame().T], ignore_index=True)
-        targetTab.loc[len(targetTab)] = new_row
+        tabela = self.__tabWydatki_.get(nazwa_tab, None)
+        if tabela is not None: tabela.loc[len(tabela)] = new_row
 
     def dolaczDoTab(self, nazwa_tab, new_df):
         target = self.podajTab(nazwa_tab)
         if target == None: pass
         else: target.dolaczDF(new_df)
 
-    def podajNazwyKolWTab(self, nazwa: str):
-        for tab in self.__tabWydatki_:
-            if tab.podajNazwe() == nazwa: return tab.podajNazwyKol()
-
-        return None
+    def podajNazwyKolWTab(self, nazwa_tab: str):
+        tabela = self.__tabWydatki_.get(nazwa_tab, None)
+        return tabela.podajNazwyKol() if tabela is not None else []
