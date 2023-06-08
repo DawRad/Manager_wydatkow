@@ -1,31 +1,29 @@
 from Fundamenty import *
-from Wyjatki import OutOfBondsError
-from Wyjatki import BadFileFormatError
+from Wyjatki import *
 
 class Interfejs:
     def __init__(self) -> None:
-        self.__posiadacze_ = []
-        self.__posiadaczPos_ = -2   # aktualna pozycja na liście posiadaczy (-2 ---> lista pusta)
+        self.__posiadacze_ = {}
+        self.__actKey_ = "" # klucz, który wskazuje obiekt typu Posiadacz, na którym aktualnie dokonuje się wszystkich akcji
     
     def utworzPosiadacza(self, imie = "Jan", nazwisko = "Kowalski"):
-        self.__posiadacze_.append(Posiadacz(imie, nazwisko))
-        if self.__posiadaczPos_ == -2: self.__posiadaczPos_ = 0
+        key = imie + " " + nazwisko
 
-    def dodajTabWydatki(self, posiadacz_hash, nazwa: str, kolumny: list):
-        '''
-        W tej metodzie trzeba się upewnić czy używając tego sposobu iteracji
-        na pewno zmieniane są oryginalne obiekty
-        '''
-        for posiadacz in self.__posiadacze_:
-            if posiadacz.podajHash() == posiadacz_hash:
-                nowa_tab = TabWydatki(nazwa, kolumny)
-                posiadacz.dodajTab(nowa_tab)
+        if self.__posiadacze_.get(key, None) is not None: raise RepKeyError("Podana wartość klucza już istnieje w słowniku")
 
-    def dodajTabWydatki(self, nazwa: str, kolumny = []):
-        if kolumny == []: nowa_tab = TabWydatki(nazwa)
-        else: nowa_tab = TabWydatki(nazwa, kolumny)
-        target = self.__posiadacze_[self.__posiadaczPos_]
-        target.dodajTab(tabela=nowa_tab)
+        self.__posiadacze_[key] = Posiadacz(imie, nazwisko)
+        if self.__actKey_ == "": self.__actKey_ = key
+
+    def dodajTabWydatki(self, nazwa: str, kolumny: list):
+        posiadacz = self.__posiadacze_[self.__actKey_]
+        nowa_tab = TabWydatki(nazwa, kolumny)
+        posiadacz.dodajTab(nowa_tab)                
+
+    # def dodajTabWydatki(self, nazwa: str, kolumny = []):
+    #     if kolumny == []: nowa_tab = TabWydatki(nazwa)
+    #     else: nowa_tab = TabWydatki(nazwa, kolumny)
+    #     target = self.__posiadacze_[self.__actKey_]
+    #     target.dodajTab(tabela=nowa_tab)
 
     '''
     Parametr polacz - łączy z istniejąca tabelą, jeśli 'True', w przeciwnym razie dodaje nową tabelę
@@ -37,47 +35,39 @@ class Interfejs:
 
         new_df = read_func(file_path)
         if polacz:
-            self.__posiadacze_[self.__posiadaczPos_].dolaczDoTab(nazwa_tab, new_df)
+            self.__posiadacze_[self.__actKey_].dolaczDoTab(nazwa_tab, new_df)
         else:
-            self.__posiadacze_[self.__posiadaczPos_].dodajTabDF(nazwa_tab, new_df)
+            self.__posiadacze_[self.__actKey_].dodajTabDF(nazwa_tab, new_df)
 
     def dodajWierszTabWydatki(self, nazwa_tab: str, nowy_wiersz = []):
-        self.__posiadacze_[self.__posiadaczPos_].dodajWierszWTab(nowy_wiersz, nazwa_tab)
+        self.__posiadacze_[self.__actKey_].dodajWierszWTab(nowy_wiersz, nazwa_tab)
 
-    def przesunWPrawo(self):
-        if self.__posiadaczPos_ == -2:
-            raise OutOfBondsError("Pusta lista Posiadaczy")
-        else:
-            self.__posiadaczPos_ += 1
-            if self.__posiadaczPos_ == len(self.__posiadacze_): self.__posiadaczPos_ = 0
-    
-    def przesunWLewo(self):
-        if self.__posiadaczPos_ == -2:
-            raise OutOfBondsError("Pusta lista Posiadaczy")
-        else:
-            self.__posiadaczPos_ -= 1
-            if self.__posiadaczPos_ == -1: self.__posiadaczPos_ = len(self.__posiadacze_) - 1
-
-    def przejdzNaPoz(self, pozycja_posiadacza = 0):
-        if self.__posiadaczPos_ == -2: raise OutOfBondsError("Pusta lista Posiadaczy")
-        else: self.__posiadaczPos_ = pozycja_posiadacza
+    def przejdzNaPoz(self, key):
+        if self.__actKey_ == "": raise OutOfBondsError("Pusta lista Posiadaczy")
+        else: self.__actKey_ = key
 
     def drukujTabWydatki(self, nazwa):
-        print(self.__posiadacze_[self.__posiadaczPos_].podajTabDF(nazwa))
+        print(self.__posiadacze_[self.__actKey_].podajTabDF(nazwa))
 
     def podajListePosiadaczy(self):
         out_list = []
-        for posiadacz in self.__posiadacze_:
-            dane = posiadacz.podajImieINazw()
+        for key in self.__posiadacze_.keys():
+            dane = self.__posiadacze_[key].podajImieINazw()
             out_list.append(dane[0] + " " + dane[1])
 
         return out_list
     
     def podajListeNazwTabWydatkow(self):
-        return self.__posiadacze_[self.__posiadaczPos_].podajNazwyTabWydatkow()
+        return self.__posiadacze_[self.__actKey_].podajNazwyTabWydatkow()
     
     '''
     W tym przypadku chodzi o posiadacza na aktualnie ustawionej pozycji na liście
     '''
     def podajDanePosiadacza(self):
-        return self.__posiadacze_[self.__posiadaczPos_].podajImieINazw()
+        return self.__posiadacze_[self.__actKey_].podajImieINazw()
+    
+    def podajTabWydatki(self, nazwa_tab: str) -> pd.DataFrame:
+        result = self.__posiadacze_[self.__actKey_].podajTabDF(nazwa_tab)
+        if result.empty: raise KeyError("Nie znaleziono tabeli o podanym kluczu")
+        
+        return result
