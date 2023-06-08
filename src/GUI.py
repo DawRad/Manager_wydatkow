@@ -1,5 +1,6 @@
 from Interfejs import Interfejs
 import PySimpleGUI as sg
+import os
 
 class MainWindow:
     def __init__(self, interfejs: Interfejs) -> None:
@@ -28,10 +29,10 @@ class MainWindow:
                 break
 
             elif event == 'Dalej':
-                selected_option, selected_option_idx = values['-COMBO-'], interfejs.podajListePosiadaczy().index(values['-COMBO-'])
-                sg.popup(f'Selected Option: {selected_option}, Selected idx: {selected_option_idx}')
+                selected_option = values['-COMBO-']
+                sg.popup(f'Selected Option: {selected_option}')
 
-                self.interfejs.przejdzNaPoz(selected_option_idx)
+                self.interfejs.przejdzNaPoz(selected_option)
                 
                 window.hide()
                 self.userWindowLoop()                
@@ -49,7 +50,7 @@ class MainWindow:
                 sg.Text("Nazwisko", font=('Arial', 14, 'bold')), 
                 sg.Text(key="-TEXT2-", font=('Arial', 14))
             ],
-            [sg.Combo(self.interfejs.podajListeNazwTabWydatkow(), key="-TABS_NAMES_COMBO-", enable_events=True)],
+            [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1))],
             [
                 sg.Button("Pokaż tabelę"),
                 sg.Button("Dodaj tabelę")
@@ -73,8 +74,9 @@ class MainWindow:
                 user_window.disable()
                 self.addTabLoop()
                 user_window.enable()
+                user_window['-TABS_NAMES_COMBO-'].update(values=self.interfejs.podajListeNazwTabWydatkow(), value=self.interfejs.podajListeNazwTabWydatkow()[0])                
             elif event == 'Pokaż tabelę':
-                pass
+                self.showTable(values['-TABS_NAMES_COMBO-'])
 
         user_window.close()
 
@@ -124,5 +126,35 @@ class MainWindow:
                     add_tab_window['-SUBMIT_TEXT-'].update(visible=False)
                     add_tab_window['-INPUT-'].update(visible=False)
                     add_tab_window['-SUBMIT-'].update(visible=False)
+            elif event == 'Wczytaj':
+                file_path = add_tab_window['-FILE_PATH-'].get()
+                if file_path != 'Wybierz plik' and not values['-JOIN_CHECK-']:
+                    self.interfejs.wczytajTabZPliku(file_path, os.path.basename(file_path).split(sep='.')[0], False)
+                    break
 
         add_tab_window.close()
+
+    def showTable(self, nazwa_tab: str):
+        df = self.interfejs.podajTabWydatki(nazwa_tab)
+
+        # Convert DataFrame to list of lists
+        data_rows = df.values.tolist()
+
+        # Get column headers
+        headers = df.columns.tolist()
+
+        show_tab_layout = [
+            [
+                sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
+                sg.FileBrowse(key='-BROWSE-')
+            ],
+            [sg.Table(values=data_rows, headings=headers, justification='left', num_rows=10, key='-TABLE-')]
+        ]
+        show_tab_window = sg.Window("Dodawanie tabeli", show_tab_layout)
+
+        while True:
+            event, values = show_tab_window.read()
+            if event == sg.WINDOW_CLOSED:
+                break
+
+        show_tab_window.close()
