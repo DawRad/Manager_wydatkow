@@ -145,8 +145,7 @@ class MainWindow:
 
         show_tab_layout = [
             [
-                sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
-                sg.FileBrowse(key='-BROWSE-')
+                sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-')
             ],
             [sg.Table(values=data_rows, headings=headers, justification='left', num_rows=10, key='-TABLE-')]
         ]
