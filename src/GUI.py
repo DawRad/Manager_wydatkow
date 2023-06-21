@@ -1,6 +1,8 @@
 from Interfejs import Interfejs
 import PySimpleGUI as sg
 import os
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as figcantk
 
 class MainWindow:
     def __init__(self, interfejs: Interfejs) -> None:
@@ -10,7 +12,8 @@ class MainWindow:
         layout = [
             [sg.Text("Wybierz użytkownika")],
             [sg.Combo(options, key='-COMBO-', default_value=options[0] if len(options) != 0 else "", enable_events=True)],
-            [sg.Button("Dalej"), sg.Button("Dodaj nowego")]
+            [sg.Button("Dalej"), sg.Button("Dodaj nowego")],
+            [sg.Button("Wyjdź")]
                   ]
         
         # Create the window
@@ -25,7 +28,7 @@ class MainWindow:
         while True:
             event, values = window.read()
 
-            if event == sg.WINDOW_CLOSED:
+            if event == sg.WINDOW_CLOSED or event == "Wyjdź":
                 break
 
             elif event == 'Dalej':
@@ -53,7 +56,8 @@ class MainWindow:
             [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1))],
             [
                 sg.Button("Pokaż tabelę"),
-                sg.Button("Dodaj tabelę")
+                sg.Button("Dodaj tabelę"),
+                sg.Button("Wykresy")
             ],
             [sg.Button("Powrót")]
         ]
@@ -74,7 +78,11 @@ class MainWindow:
                 user_window.disable()
                 self.addTabLoop()
                 user_window.enable()
-                user_window['-TABS_NAMES_COMBO-'].update(values=self.interfejs.podajListeNazwTabWydatkow(), value=self.interfejs.podajListeNazwTabWydatkow()[0])                
+                user_window['-TABS_NAMES_COMBO-'].update(values=self.interfejs.podajListeNazwTabWydatkow(), value=self.interfejs.podajListeNazwTabWydatkow()[0])
+            elif event == 'Wykresy':
+                user_window.disable()
+                self.drawGraphs()
+                user_window.enable()            
             elif event == 'Pokaż tabelę':
                 self.showTable(values['-TABS_NAMES_COMBO-'])
 
@@ -144,9 +152,6 @@ class MainWindow:
         headers = df.columns.tolist()
 
         show_tab_layout = [
-            [
-                sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-')
-            ],
             [sg.Table(values=data_rows, headings=headers, justification='left', num_rows=10, key='-TABLE-')]
         ]
         show_tab_window = sg.Window("Dodawanie tabeli", show_tab_layout)
@@ -157,3 +162,75 @@ class MainWindow:
                 break
 
         show_tab_window.close()
+
+    def drawGraphs(self):
+        graph_types = ["kołowy", "słupkowy"]
+        options = self.interfejs.podajListeNazwTabWydatkow()
+        # Utworzenie layoutu dla okna
+        layout = [
+            [sg.Text('Wybierz tabele:'), sg.Text('Wybierz typ wykresu:')],
+            [sg.Combo(options, enable_events=True, key='-COMBO-'), sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])],
+            [sg.Text('Wybierz kolumny:'), sg.Text('Wybierz wartości:')],
+            [sg.Combo(options, enable_events=True, key='-CB_COLS-')],
+            [sg.Text('Wybrane tabele:')],
+            [sg.Output(size=(30, 5), key='-OUTPUT-')],
+            [sg.Button('Zamknij')]
+        ]
+
+        # Utworzenie okna
+        graphs_window = sg.Window('Wykresy', layout)
+        selected_values = []
+
+        # Główna pętla programu
+        while True:
+            event, values = graphs_window.read()
+            
+            if event == sg.WINDOW_CLOSED or event == 'Zamknij':
+                break
+            
+            # Obsługa zdarzenia wyboru elementu w liście rozwijanej
+            if event == '-COMBO-':
+                selected_option = values['-COMBO-']
+                
+                # Aktualizacja wartości pól wyboru na podstawie wybranej opcji
+                if selected_option in selected_values:
+                    selected_values.remove(selected_option)
+                else:
+                    selected_values.append(selected_option)
+                    # selected_values = [option for option in options if option not in selected_values]
+                
+                selected_values = sorted(selected_values)
+
+                # Aktualizacja listy z nazwami kolumn
+                if bool(selected_values):
+                    new_vals = self.interfejs.podajUnikatoweNazwyKol(selected_values)
+                    graphs_window['-CB_COLS-'].update(values=new_vals, value=new_vals[0])
+                else: graphs_window['-CB_COLS-'].update(values='')
+
+                # Wyświetlenie aktualnie wybranych opcji                
+                graphs_window['-OUTPUT-'].update(selected_values)
+                # print(selected_values)
+
+            
+
+        # Zamknięcie okna
+        graphs_window.close()
+
+        # < - - - - - - - - - - - - - - - - - - - - > Funkcje pomocnicze < - - - - - - - - - - - - - - - - - - - - > 
+
+        def drawGraph(window: sg.Window, labels, sizes):
+            # Tworzenie wykresu kołowego
+            fig, ax = plt.subplots()
+            ax.pie(sizes, labels=labels, autopct='%1.1f%%')
+            ax.axis('equal')
+
+            # Konwertowanie wykresu na obiekt Tkinter
+            canvas = figcantk(fig)
+            canvas.draw()
+
+            # Pobieranie obszaru rysowania z okna
+            canvas_elem = window['-CANVAS-'].TKCanvas
+
+            # Rysowanie wykresu w obszarze rysowania
+            canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
+            canvas._tkcanvas.pack(side='top', fill='both', expand=True)
