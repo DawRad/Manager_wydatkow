@@ -1,5 +1,7 @@
 import datetime as dtm
 import pandas as pd
+import numpy as np
+from functools import reduce
 
 
 """
@@ -71,10 +73,13 @@ class TabWydatki(Obiekt):
         else: self.__tabela_ = pd.DataFrame(columns=kolumny)      
 
     def podajNazwyKol(self):
-        return self.__tabela_.columns
+        return self.__tabela_.columns.values
     
     def podajDF(self):
         return self.__tabela_
+    
+    def podajUnikatoweWartZKol(self, nazwa_kol: str):
+        return self.__tabela_[nazwa_kol].unique().sort()
     
     def dolaczDF(self, new_df):
         self.__tabela_ = pd.concat([self.__tabela_, new_df], ignore_index=True)
@@ -116,11 +121,29 @@ class Posiadacz(Obiekt):
     def podajTab(self, nazwa_tab: str):
         return self.__tabWydatki_.get(nazwa_tab, None)
     
+    def podajUnikatoweNazwyKol(self, nazwy_tab: list()):
+        res = []
+        for nazwa in nazwy_tab: res.append(self.__tabWydatki_[nazwa].podajNazwyKol())
+        if len(res) > 1: res = reduce(np.union1d, res).tolist()
+        elif len(res) == 1: res = sorted(res[0].tolist())
+
+        return res
+
+    def podajUnikatoweWartZKol(self, nazwy_tab: list(), nazwa_kol: str):
+        res = []
+        for nazwa in nazwy_tab: res.append(self.__tabWydatki_[nazwa].podajUnikatoweWartZKol(nazwa_kol))
+        if len(res) > 1: res = reduce(np.union1d, res).tolist()
+        elif len(res) == 1: res = sorted(res[0].tolist())
+
+        return res
+    
     def dodajTab(self, tabela: TabWydatki):
         self.__tabWydatki_.append(tabela)
 
     def dodajTabDF(self, nazwa_tab: str, df: pd.DataFrame):
-        # TO-DO: sprawdzenie, czy element o podanym kluczu już nie istnieje
+        # TODO: 
+        #   sprawdzenie, czy element o podanym kluczu już nie istnieje
+
         new_tab = TabWydatki(nazwa_tab, df=df)
         self.__tabWydatki_[nazwa_tab] = new_tab
 
