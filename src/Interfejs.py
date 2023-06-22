@@ -78,7 +78,7 @@ class Interfejs:
 
         Zwraca
         ----------
-        list(str) : Listę z unikalnymi nazwami kolumn ze wszystkich podanych list.
+        list(str) : Listę z unikalnymi nazwami kolumn ze wszystkich podanych tabel.
         """
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweNazwyKol(nazwy_tab)

@@ -36,9 +36,9 @@ class MainWindow:
                 sg.popup(f'Selected Option: {selected_option}')
 
                 self.interfejs.przejdzNaPoz(selected_option)
-                
+
                 window.hide()
-                self.userWindowLoop()                
+                self.userWindowLoop()
                 window.un_hide()
 
         # Close the window
@@ -49,9 +49,9 @@ class MainWindow:
         tab_options = self.interfejs.podajListeNazwTabWydatkow()
         user_layout = [
             [
-                sg.Text("Imie", font=('Arial', 14, 'bold')), 
-                sg.Text(key="-TEXT1-", font=('Arial', 14)), 
-                sg.Text("Nazwisko", font=('Arial', 14, 'bold')), 
+                sg.Text("Imie", font=('Arial', 14, 'bold')),
+                sg.Text(key="-TEXT1-", font=('Arial', 14)),
+                sg.Text("Nazwisko", font=('Arial', 14, 'bold')),
                 sg.Text(key="-TEXT2-", font=('Arial', 14))
             ],
             [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1))],
@@ -198,13 +198,12 @@ class MainWindow:
 
                 # Aktualizacja listy z nazwami kolumn
                 if bool(selected_values):
-                    new_vals = self.interfejs.podajUnikatoweNazwyKol(selected_values)
-                    graphs_window['-CB_COLS-'].update(values=new_vals, value=new_vals[0])
-                else: graphs_window['-CB_COLS-'].update(values='')
+                    self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COLS-'], combos_new_vals=[self.interfejs.podajUnikatoweNazwyKol(selected_values)])
+                else: 
+                    self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-CB_COL_VALS-'])
 
                 # Wyświetlenie aktualnie wybranych opcji                
                 graphs_window['-OUTPUT-'].update(selected_values)
-                # print(selected_values)
             
             # Obsługa zdarzenia wyboru elementu w liście kolumn
             if event == '-CB_COLS-':
@@ -219,7 +218,7 @@ class MainWindow:
     def adjustBindedGUIElems(
             self, window: sg.Window,
             elems_to_enable = [], elems_to_disable = [], elems_to_visible = [], elems_to_invisible = [], 
-            combos_to_update = [], combos_to_clear = []
+            combos_to_update = [], combos_new_vals = [], combos_to_clear = []
             ):
         """ Metoda służąca do odpowiedniego dostosowania powiązanych ze sobą elementów GUI.            
 
@@ -227,22 +226,31 @@ class MainWindow:
         ----------
         elems_to_enable : list()
         elems_to_disable : list()
-        elems_to_le : list()
-        elems_to_inle : list()
+        elems_to_visible : list()
+        elems_to_invisible : list()
+
         combos_to_update : list()
             Lista nazw elementów typu PySimpleGUI.Combo do zaktualizowania zawartych opcji
+
+        combos_new_vals : list()
+            Zawiera listę z nowymi opcjami dla każdego elementu z combos_to_update. Jeżeli zawiera mniej list wartości niż elementów
+            z combos_to_update to ostatnia lista nowych opcji jest przypisywana dla wszystkich pozostałych obiektów PySimpleGUI.Combo
+
         combos_to_clear : list()
             Lista nazw elementów typu PySimpleGUI.Combo do całkowitego usunięcia zawartych opcji
         """
-
-        #TODO: 
-        #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
 
         for elem in elems_to_enable: window[elem].update(disabled=False)
         for elem in elems_to_disable: window[elem].update(disabled=True)
         for elem in elems_to_visible: window[elem].update(visible=True)
         for elem in elems_to_invisible: window[elem].update(visible=False)
         for combo in combos_to_clear: window[combo].update(values='')
+
+        #TODO: 
+        #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
+        for idx in range(len(combos_to_update)): 
+            new_vals = combos_new_vals[idx if len(combos_new_vals) > idx else (len(combos_new_vals) - 1)]
+            window[combos_to_update[idx]].update(values=new_vals, value = new_vals[0] if bool(new_vals) else '')
 
     def drawGraph(self, window: sg.Window, labels, sizes):
         # Tworzenie wykresu kołowego
