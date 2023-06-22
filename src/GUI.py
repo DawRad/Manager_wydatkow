@@ -44,6 +44,7 @@ class MainWindow:
         # Close the window
         window.close()
 
+    # < - - - - - - - - - - - - - - - - - - - - > Metody okien pobocznych < - - - - - - - - - - - - - - - - - - - - > 
     def userWindowLoop(self):
         tab_options = self.interfejs.podajListeNazwTabWydatkow()
         user_layout = [
@@ -106,11 +107,6 @@ class MainWindow:
             ]
         ]
         add_tab_window = sg.Window("Dodawanie tabeli", add_tab_layout)
-        # add_tab_window.read(timeout=1)
-        # add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
-        # add_tab_window['-INPUT-'].update(visible=True)
-        # add_tab_window['-SUBMIT-'].update(visible=True)
-        # add_tab_window.read(timeout=1)
 
         while True:
             event, values = add_tab_window.read()
@@ -122,18 +118,12 @@ class MainWindow:
                 folder_path = values['-BROWSE-']
                 add_tab_window['-FILE_PATH-'].update(folder_path)
                 if values['-JOIN_CHECK-']:
-                    add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
-                    add_tab_window['-INPUT-'].update(visible=True)
-                    add_tab_window['-SUBMIT-'].update(visible=True)
+                    self.adjustBindedGUIElems(add_tab_window, elems_to_visible=['-SUBMIT_TEXT-', '-INPUT-', '-SUBMIT-'])
             elif event == '-JOIN_CHECK-':
                 if values['-JOIN_CHECK-'] and add_tab_window['-FILE_PATH-'].get() != 'Wybierz plik':
-                    add_tab_window['-SUBMIT_TEXT-'].update(visible=True)
-                    add_tab_window['-INPUT-'].update(visible=True)
-                    add_tab_window['-SUBMIT-'].update(visible=True)
+                    self.adjustBindedGUIElems(add_tab_window, elems_to_visible=['-SUBMIT_TEXT-', '-INPUT-', '-SUBMIT-'])
                 elif not(values['-JOIN_CHECK-']):
-                    add_tab_window['-SUBMIT_TEXT-'].update(visible=False)
-                    add_tab_window['-INPUT-'].update(visible=False)
-                    add_tab_window['-SUBMIT-'].update(visible=False)
+                    self.adjustBindedGUIElems(add_tab_window, elems_to_invisible=['-SUBMIT_TEXT-', '-INPUT-', '-SUBMIT-'])
             elif event == 'Wczytaj':
                 file_path = add_tab_window['-FILE_PATH-'].get()
                 if file_path != 'Wybierz plik' and not values['-JOIN_CHECK-']:
@@ -170,9 +160,14 @@ class MainWindow:
         layout = [
             [sg.Text('Wybierz tabele:'), sg.Text('Wybierz typ wykresu:')],
             [sg.Combo(options, enable_events=True, key='-COMBO-'), sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])],
-            [sg.Text('Wybierz kolumny:'), sg.Text('Wybierz wartości:')],
-            [sg.Combo(options, enable_events=True, key='-CB_COLS-')],
-            [sg.Text('Wybrane tabele:')],
+            [
+                sg.Text('Wybierz kolumny:'), 
+                sg.Combo([], enable_events=True, key='-CB_COLS-'),
+                sg.Text('Wybierz wartości:'),
+                sg.Combo([], enable_events=True, key='-CB_COL_VALS-')
+            ],
+            [],
+            [sg.Text('Wybrane opcje:')],
             [sg.Output(size=(30, 5), key='-OUTPUT-')],
             [sg.Button('Zamknij')]
         ]
@@ -180,15 +175,17 @@ class MainWindow:
         # Utworzenie okna
         graphs_window = sg.Window('Wykresy', layout)
         selected_values = []
+        selected_cols = []
+        selected_col_vals = []
 
-        # Główna pętla programu
+        # Główna pętla metody
         while True:
             event, values = graphs_window.read()
             
             if event == sg.WINDOW_CLOSED or event == 'Zamknij':
                 break
             
-            # Obsługa zdarzenia wyboru elementu w liście rozwijanej
+            # Obsługa zdarzenia wyboru elementu w liście tabel
             if event == '-COMBO-':
                 selected_option = values['-COMBO-']
                 
@@ -197,8 +194,6 @@ class MainWindow:
                     selected_values.remove(selected_option)
                 else:
                     selected_values.append(selected_option)
-                    # selected_values = [option for option in options if option not in selected_values]
-                
                 selected_values = sorted(selected_values)
 
                 # Aktualizacja listy z nazwami kolumn
@@ -210,27 +205,58 @@ class MainWindow:
                 # Wyświetlenie aktualnie wybranych opcji                
                 graphs_window['-OUTPUT-'].update(selected_values)
                 # print(selected_values)
+            
+            # Obsługa zdarzenia wyboru elementu w liście kolumn
+            if event == '-CB_COLS-':
+                pass
 
             
 
         # Zamknięcie okna
         graphs_window.close()
 
-        # < - - - - - - - - - - - - - - - - - - - - > Funkcje pomocnicze < - - - - - - - - - - - - - - - - - - - - > 
+    # < - - - - - - - - - - - - - - - - - - - - > Metody pomocnicze < - - - - - - - - - - - - - - - - - - - - >
+    def adjustBindedGUIElems(
+            self, window: sg.Window,
+            elems_to_enable = [], elems_to_disable = [], elems_to_visible = [], elems_to_invisible = [], 
+            combos_to_update = [], combos_to_clear = []
+            ):
+        """ Metoda służąca do odpowiedniego dostosowania powiązanych ze sobą elementów GUI.            
 
-        def drawGraph(window: sg.Window, labels, sizes):
-            # Tworzenie wykresu kołowego
-            fig, ax = plt.subplots()
-            ax.pie(sizes, labels=labels, autopct='%1.1f%%')
-            ax.axis('equal')
+        Parametry
+        ----------
+        elems_to_enable : list()
+        elems_to_disable : list()
+        elems_to_le : list()
+        elems_to_inle : list()
+        combos_to_update : list()
+            Lista nazw elementów typu PySimpleGUI.Combo do zaktualizowania zawartych opcji
+        combos_to_clear : list()
+            Lista nazw elementów typu PySimpleGUI.Combo do całkowitego usunięcia zawartych opcji
+        """
 
-            # Konwertowanie wykresu na obiekt Tkinter
-            canvas = figcantk(fig)
-            canvas.draw()
+        #TODO: 
+        #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
 
-            # Pobieranie obszaru rysowania z okna
-            canvas_elem = window['-CANVAS-'].TKCanvas
+        for elem in elems_to_enable: window[elem].update(disabled=False)
+        for elem in elems_to_disable: window[elem].update(disabled=True)
+        for elem in elems_to_visible: window[elem].update(visible=True)
+        for elem in elems_to_invisible: window[elem].update(visible=False)
+        for combo in combos_to_clear: window[combo].update(values='')
 
-            # Rysowanie wykresu w obszarze rysowania
-            canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
-            canvas._tkcanvas.pack(side='top', fill='both', expand=True)
+    def drawGraph(self, window: sg.Window, labels, sizes):
+        # Tworzenie wykresu kołowego
+        fig, ax = plt.subplots()
+        ax.pie(sizes, labels=labels, autopct='%1.1f%%')
+        ax.axis('equal')
+
+        # Konwertowanie wykresu na obiekt Tkinter
+        canvas = figcantk(fig)
+        canvas.draw()
+
+        # Pobieranie obszaru rysowania z okna
+        canvas_elem = window['-CANVAS-'].TKCanvas
+
+        # Rysowanie wykresu w obszarze rysowania
+        canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
+        canvas._tkcanvas.pack(side='top', fill='both', expand=True)
