@@ -101,6 +101,37 @@ class TabWydatki(Obiekt):
 
         return res
     
+    def podajDaneTabeliDoWykresu(self, kol_etykiet: str, kol_wart = '', wart_kolumn = [], sumuj = False) -> dict():
+        """ Zbiera dane z tabeli DataFrame.
+
+        Domyślnie dane są używane w rysowaniu wykresów.
+
+        Zwraca
+        ----------
+        Pusty słownik, jeśli nie znaleziono pasujących wartości.
+        Słownik, w którym: unikalne wartości to klucze, odpowiadające im zliczenia lub sumy wartości to wartości słownika.
+        """
+
+        res = {}
+        if not sumuj:
+            # tu zliczane są tylko wystąpienia unikalnych wartości z kolumny etykiet
+            res = self.__tabela_[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else self.__tabela_[self.__tabela_[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
+            res_keys, res_values = res.index.tolist(), res.values.tolist()
+            res = dict[str, int]()
+            for key, value in res_keys, res_values: res[key] = value
+        elif sumuj and kol_wart != '':
+            # tu sumowane są wartości z kolumny wartości dla wszystkich lub wybranych etykiet z kolumny etykiet
+            res = dict[str, float]()
+            if len(wart_kolumn) == 0:
+                # jeżeli nie ma wybranych wartości kolumny etykiet do uwzględnienia
+                for idx, row in self.__tabela_.iterrows(): res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
+            else:
+                # gdy uwzględniamy tylko wybrane wartości kolumny etykiet
+                for idx, row in self.__tabela_.iterrows(): 
+                    if row[kol_etykiet] in wart_kolumn: res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
+
+        return res
+    
     def dolaczDF(self, new_df):
         self.__tabela_ = pd.concat([self.__tabela_, new_df], ignore_index=True)
     
@@ -156,6 +187,24 @@ class Posiadacz(Obiekt):
             if tmp is not None: res.append(tmp)
         if len(res) > 1: res = reduce(np.union1d, res).tolist()
         elif len(res) == 1: res = sorted(res[0].tolist())
+
+        return res
+    
+    def podajDaneTabelDoWykresu(self, nazwy_tab: list[str](), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False) -> dict():
+        """ Wyszukuje wskazane dane w podanych tabelach.
+
+        Domyślnie dane są pobierane dla tworzenia wykresów.
+
+        Zwraca
+        ----------
+        Pusty słownik, jeśli nie znaleziono pasujących wartości.
+        Słownik, w którym: unikalne wartości oraz odpowiadające im zliczenia lub sumy wartości (dla każdej z podanych tabel) to, odpowiednio, klucze i wartości słownika.
+        """
+
+        res = {}
+        for nazwa in nazwy_tab: 
+            tmp = self.__tabWydatki_[nazwa].podajDaneTabeliDoWykresu(kol_etykiet, kol_wart, etykiety_kol, sumuj)
+            for key in tmp.keys(): res[key] = (res[key] + tmp[key]) if res.get(key, None) is not None else tmp[key] 
 
         return res
     
