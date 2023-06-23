@@ -95,7 +95,9 @@ class TabWydatki(Obiekt):
         """
 
         res = None
-        if nazwa_kol in self.__tabela_.columns: res = self.__tabela_[nazwa_kol].unique().sort()
+        if nazwa_kol in self.__tabela_.columns.values: 
+            res = self.__tabela_[nazwa_kol].unique()
+            res.sort()
 
         return res
     

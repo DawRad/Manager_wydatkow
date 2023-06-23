@@ -61,6 +61,9 @@ class Interfejs:
     def podajListeNazwTabWydatkow(self):
         return self.__posiadacze_[self.__actKey_].podajNazwyTabWydatkow()
     
+    def podajNazwyKolTabWydatkow(self, nazwa_tab: str):
+        return self.__posiadacze_[self.__actKey_].podajNazwyKolWTab(nazwa_tab)
+    
     '''
     W tym przypadku chodzi o posiadacza na aktualnie ustawionej pozycji na liście
     '''
