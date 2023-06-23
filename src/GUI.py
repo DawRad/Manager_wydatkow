@@ -95,7 +95,7 @@ class MainWindow:
                 sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
                 sg.FileBrowse(key='-BROWSE-')
             ],
-            [sg.Checkbox("Dołącz do tabeli", metadata="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-", change_submits=True, enable_events=True)],
+            [sg.Checkbox("Dołącz do tabeli", tooltip="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-", change_submits=True, enable_events=True)],
             [
                 sg.Text("Nazwa tabeli", key='-SUBMIT_TEXT-', visible=False),
                 sg.Input(key='-INPUT-', visible=False),
@@ -158,15 +158,23 @@ class MainWindow:
         options = self.interfejs.podajListeNazwTabWydatkow()
         # Utworzenie layoutu dla okna
         layout = [
-            [sg.Text('Wybierz tabele:'), sg.Text('Wybierz typ wykresu:')],
-            [sg.Combo(options, enable_events=True, key='-COMBO-'), sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])],
+            [
+                sg.Text('Wybierz tabele:'), 
+                sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych"), 
+                sg.Text('Wybierz typ wykresu:'),
+                sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])
+            ],
             [
                 sg.Text('Wybierz kolumny:'), 
-                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True),
+                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10)),
                 sg.Text('Wybierz wartości:'),
-                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True)
+                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True, size=(20, 10), tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych")
             ],
-            [],
+            [
+                sg.Checkbox("Sumowanie wartości", key="-SUM_CHECK-", enable_events=True, tooltip="Jeśli zaznaczone: sumuje wartości z kolumny wartości.\nW przeciwnym wypadku zlicza wystąpienia"),
+                sg.Text('Wybierz kolumnę wartości do sumowania:'), 
+                sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True),
+            ],
             [sg.Text('Wybrane opcje:')],
             [sg.Output(size=(30, 5), key='-OUTPUT-')],
             [sg.Button('Zamknij')]
@@ -241,7 +249,11 @@ class MainWindow:
                 graphs_window['-OUTPUT-'].update('')
                 print("Wybrane tabele:\n",selected_tabs, '\n')
                 print("Wybrana kolumna:\n",selected_col, '\n')
-                print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')              
+                print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')
+
+            if event == '-SUM_CHECK-':
+                if values['-SUM_CHECK-']: self.adjustBindedGUIElems(graphs_window, elems_to_enable=['-CB_COL_FOR_VALS-'])
+                else: self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'])
 
         # Zamknięcie okna
         graphs_window.close()
