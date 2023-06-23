@@ -72,6 +72,9 @@ class TabWydatki(Obiekt):
         if not df.empty: self.__tabela_ = df
         else: self.__tabela_ = pd.DataFrame(columns=kolumny)      
 
+    def podajNazwe(self):
+        return self.__nazwa_
+
     def podajNazwyKol(self):
         return self.__tabela_.columns.values
     
@@ -108,10 +111,10 @@ class TabWydatki(Obiekt):
 class Posiadacz(Obiekt):
     def __init__(self, imie: str, nazwisko: str) -> None:
         super().__init__()
-        self.__tabWydatki_ = {}
+        self.__tabWydatki_ = dict[str, TabWydatki]()
         self.__imie_ = imie
         self.__nazwisko_ = nazwisko
-        self.__zasoby_ = {}
+        self.__zasoby_ = dict[str, Zasob]()
         self.__hash_ = (self.__imie_ + self.__nazwisko_).lower()
 
     def podajHash(self):
@@ -146,7 +149,7 @@ class Posiadacz(Obiekt):
 
     def podajUnikatoweWartZKol(self, nazwy_tab: list(), nazwa_kol: str):
         res = []
-        for nazwa in nazwy_tab: 
+        for nazwa in nazwy_tab:
             tmp = self.__tabWydatki_[nazwa].podajUnikatoweWartZKol(nazwa_kol)
             if tmp is not None: res.append(tmp)
         if len(res) > 1: res = reduce(np.union1d, res).tolist()
@@ -155,7 +158,10 @@ class Posiadacz(Obiekt):
         return res
     
     def dodajTab(self, tabela: TabWydatki):
-        self.__tabWydatki_.append(tabela)
+        #TODO:
+        #   sprawdzenie, czy element o podanym kluczu już nie istnieje
+
+        self.__tabWydatki_[tabela.podajNazwe()] = tabela
 
     def dodajTabDF(self, nazwa_tab: str, df: pd.DataFrame):
         # TODO: 

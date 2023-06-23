@@ -3,7 +3,7 @@ from Wyjatki import *
 
 class Interfejs:
     def __init__(self) -> None:
-        self.__posiadacze_ = {}
+        self.__posiadacze_ = dict[str, Posiadacz]()
         self.__actKey_ = "" # klucz, który wskazuje obiekt typu Posiadacz, na którym aktualnie dokonuje się wszystkich akcji
     
     def utworzPosiadacza(self, imie = "Jan", nazwisko = "Kowalski"):
@@ -92,6 +92,7 @@ class Interfejs:
         ----------
         nazwy_tab : str
             Nazwa tabeli ze słownika obiektów typu TabWydatki klasy Posiadacz
+
         nazwa_kol : str
             Nazwa analizowanej kolumny tabeli
 
