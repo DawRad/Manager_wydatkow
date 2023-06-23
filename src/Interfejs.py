@@ -28,9 +28,9 @@ class Interfejs:
     '''
     Parametr polacz - łączy z istniejąca tabelą, jeśli 'True', w przeciwnym razie dodaje nową tabelę
     '''
-    def wczytajTabZPliku(self, file_path = "", nazwa_tab = "", sep = ';', polacz=False):
+    def wczytajTabZPliku(self, file_path = "", nazwa_tab = "", data_sep = ';', dec_sep = ',', polacz=False):
         if file_path[-4:len(file_path)] == ".csv":             
-            read_func = lambda path: pd.read_csv(filepath_or_buffer=path, sep=sep)
+            read_func = lambda path: pd.read_csv(filepath_or_buffer=path, sep=data_sep, decimal=dec_sep)
         elif file_path[-5:len(file_path)] == ".xlsx": read_func = pd.read_excel
         else: raise BadFileFormatError("Format pliku z tabelą musi mieć rozszerzenie .csv lub .xlsx")
 
@@ -63,11 +63,11 @@ class Interfejs:
     
     def podajNazwyKolTabWydatkow(self, nazwa_tab: str):
         return self.__posiadacze_[self.__actKey_].podajNazwyKolWTab(nazwa_tab)
-    
-    '''
-    W tym przypadku chodzi o posiadacza na aktualnie ustawionej pozycji na liście
-    '''
+        
     def podajDanePosiadacza(self):
+        '''W tym przypadku chodzi o posiadacza na aktualnie ustawionej pozycji na liście        
+        '''
+
         return self.__posiadacze_[self.__actKey_].podajImieINazw()
     
     def podajTabWydatki(self, nazwa_tab: str) -> pd.DataFrame:
@@ -106,7 +106,7 @@ class Interfejs:
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweWartZKol(nazwy_tab, nazwa_kol)
     
-    def podajDaneDoWykresu(self, tabs: list(), kolumny_warunku, kolumny_celu: str, wart_kolumn = [], zliczaj = False):
+    def podajDaneDoWykresu(self, tabs: list(), kolumna_etykiet: str, kolumna_wart: str, etykiety_kolumn = [], zliczaj = False):
         """ Podaje odpowiednie dane do wyrysowania wykresu.
 
         W zależności od tego, jakie parametry podano, dane mogą uwzględniać zliczone 
@@ -115,11 +115,17 @@ class Interfejs:
         Parameters
         ----------
         tabs : list(str)
-            Lista nazw tabel, które mają zostać uwzględnione            
-        kolumny_celu: str
-            Kolumny, które są analizowane podczas doboru danych
-        wart_kolumn : list(str)
-            Przekazuje jakie 
+            Lista nazw tabel, które mają zostać uwzględnione
+
+        kolumna_etykiet : str
+            Analizowana kolumna, która zawiera etykiety danych
+
+        kolumna_wart : str
+            Kolumna, która zawiera wartości do sumowania
+
+        etykiety_kolumn : list(str)
+            Przekazuje, jakie pozycje z analizowanej kolumny są brane pod uwagę
+
         zliczaj : bool
             Jeżeli True - zlicza wystąpienia każdej unikatowej (lub każdej z wybranych w parametrze wart_kolumn) wartości z kolumn podanych w parametrze kolumny_celu.
             Jeżeli False - analogicznie, jak w przeciwnym wypadku, ale nie zlicza, tylko sumuje te wartości.
