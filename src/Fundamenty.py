@@ -78,8 +78,23 @@ class TabWydatki(Obiekt):
     def podajDF(self):
         return self.__tabela_
     
-    def podajUnikatoweWartZKol(self, nazwa_kol: str):
-        return self.__tabela_[nazwa_kol].unique().sort()
+    def podajUnikatoweWartZKol(self, nazwa_kol: str) -> None | np.ndarray:
+        """ Podaje tylko niepowtarzające się wartości z danej kolumny pola TabWydatki.__tabela_
+
+        Parametry
+        ----------
+        nazwa_kol : str
+            Nazwa kolumny, w której są szukane unikalne wartości
+
+        Zwraca
+        ----------
+        None, jeżeli w tabeli nie ma podanej kolumny. W przeciwnym wypadku: numpy.ndarray
+        """
+
+        res = None
+        if nazwa_kol in self.__tabela_.columns: res = self.__tabela_[nazwa_kol].unique().sort()
+
+        return res
     
     def dolaczDF(self, new_df):
         self.__tabela_ = pd.concat([self.__tabela_, new_df], ignore_index=True)
@@ -131,7 +146,9 @@ class Posiadacz(Obiekt):
 
     def podajUnikatoweWartZKol(self, nazwy_tab: list(), nazwa_kol: str):
         res = []
-        for nazwa in nazwy_tab: res.append(self.__tabWydatki_[nazwa].podajUnikatoweWartZKol(nazwa_kol))
+        for nazwa in nazwy_tab: 
+            tmp = self.__tabWydatki_[nazwa].podajUnikatoweWartZKol(nazwa_kol)
+            if tmp is not None: res.append(tmp)
         if len(res) > 1: res = reduce(np.union1d, res).tolist()
         elif len(res) == 1: res = sorted(res[0].tolist())
 
