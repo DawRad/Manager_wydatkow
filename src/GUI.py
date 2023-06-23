@@ -162,9 +162,9 @@ class MainWindow:
             [sg.Combo(options, enable_events=True, key='-COMBO-'), sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])],
             [
                 sg.Text('Wybierz kolumny:'), 
-                sg.Combo([], enable_events=True, key='-CB_COLS-'),
+                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True),
                 sg.Text('Wybierz wartości:'),
-                sg.Combo([], enable_events=True, key='-CB_COL_VALS-')
+                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True)
             ],
             [],
             [sg.Text('Wybrane opcje:')],
@@ -174,8 +174,8 @@ class MainWindow:
 
         # Utworzenie okna
         graphs_window = sg.Window('Wykresy', layout)
-        selected_values = []
-        selected_cols = []
+        selected_tabs = []
+        selected_col = ''
         selected_col_vals = []
 
         # Główna pętla metody
@@ -190,26 +190,58 @@ class MainWindow:
                 selected_option = values['-COMBO-']
                 
                 # Aktualizacja wartości pól wyboru na podstawie wybranej opcji
-                if selected_option in selected_values:
-                    selected_values.remove(selected_option)
+                if selected_option in selected_tabs:
+                    selected_tabs.remove(selected_option)
                 else:
-                    selected_values.append(selected_option)
-                selected_values = sorted(selected_values)
+                    selected_tabs.append(selected_option)
+                selected_tabs = sorted(selected_tabs)
 
                 # Aktualizacja listy z nazwami kolumn
-                if bool(selected_values):
-                    self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COLS-'], combos_new_vals=[self.interfejs.podajUnikatoweNazwyKol(selected_values)])
-                else: 
+                if bool(selected_tabs): self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COLS-'], 
+                                                                  combos_new_vals=[self.interfejs.podajUnikatoweNazwyKol(selected_tabs)],
+                                                                  combos_to_clear=['-CB_COL_VALS-']
+                                                                  )
+                else:  
                     self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-CB_COL_VALS-'])
+                    selected_col = ''
+                    selected_col_vals.clear()
 
                 # Wyświetlenie aktualnie wybranych opcji                
-                graphs_window['-OUTPUT-'].update(selected_values)
+                graphs_window['-OUTPUT-'].update('')
+                print("Wybrane tabele:\n",selected_tabs, '\n')
+                print("Wybrana kolumna:\n",selected_col, '\n')
+                print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')
             
             # Obsługa zdarzenia wyboru elementu w liście kolumn
             if event == '-CB_COLS-':
-                pass
+                if values['-CB_COLS-'] != selected_col:
+                    selected_col = values['-CB_COLS-']
+                    selected_col_vals = []
+                    self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COL_VALS-'], 
+                                            combos_new_vals=[self.interfejs.podajUnikatoweWartZKol(selected_tabs, selected_col)]
+                                            )
+                    
+                    # Wyświetlenie aktualnie wybranych opcji                
+                    graphs_window['-OUTPUT-'].update('')
+                    print("Wybrane tabele:\n",selected_tabs, '\n')
+                    print("Wybrana kolumna:\n",selected_col, '\n')
+                    print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')
+                
+            if event == '-CB_COL_VALS-':
+                selected_option = values['-CB_COL_VALS-']
+                
+                # Aktualizacja wartości pól wyboru na podstawie wybranej opcji
+                if selected_option in selected_col_vals:
+                    selected_col_vals.remove(selected_option)
+                else:
+                    selected_col_vals.append(selected_option)
+                selected_col_vals = sorted(selected_col_vals)  
 
-            
+                # Wyświetlenie aktualnie wybranych opcji                
+                graphs_window['-OUTPUT-'].update('')
+                print("Wybrane tabele:\n",selected_tabs, '\n')
+                print("Wybrana kolumna:\n",selected_col, '\n')
+                print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')              
 
         # Zamknięcie okna
         graphs_window.close()
