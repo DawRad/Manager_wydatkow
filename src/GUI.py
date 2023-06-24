@@ -2,7 +2,7 @@ from Interfejs import Interfejs
 import PySimpleGUI as sg
 import os
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as figcantk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigCanvTk
 
 class MainWindow:
     def __init__(self, interfejs: Interfejs) -> None:
@@ -176,12 +176,18 @@ class MainWindow:
                 sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True),
             ],
             [sg.Text('Wybrane opcje:')],
-            [sg.Output(size=(30, 5), key='-OUTPUT-')],
-            [sg.Button('Zamknij')]
+            [
+                sg.Output(size=(30, 5), key='-OUTPUT-'),
+                sg.Canvas(size=(400, 400), key='-CANVAS-')
+            ],
+            [
+                sg.Button('Rysuj', key='-RYSUJ-', disabled=True),
+                sg.Button('Zamknij')
+            ]
         ]
 
         # Utworzenie okna
-        graphs_window = sg.Window('Wykresy', layout)
+        graphs_window = sg.Window('Wykresy', layout, finalize=True)
         selected_tabs = []
         selected_col = ''
         selected_col_vals = []
@@ -211,8 +217,9 @@ class MainWindow:
                                                                   )
                 else:  
                     self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-CB_COL_VALS-'])
-                    selected_col = ''
-                    selected_col_vals.clear()
+
+                selected_col = ''
+                selected_col_vals.clear()                    
 
                 # Wyświetlenie aktualnie wybranych opcji                
                 graphs_window['-OUTPUT-'].update('')
@@ -229,7 +236,8 @@ class MainWindow:
                                             combos_new_vals=[self.interfejs.podajUnikatoweWartZKol(selected_tabs, selected_col)]
                                             )
                     
-                    # Wyświetlenie aktualnie wybranych opcji                
+                    graphs_window['-RYSUJ-'].update(disabled=False)
+                    # Wyświetlenie aktualnie wybranych opcji            
                     graphs_window['-OUTPUT-'].update('')
                     print("Wybrane tabele:\n",selected_tabs, '\n')
                     print("Wybrana kolumna:\n",selected_col, '\n')
@@ -254,6 +262,14 @@ class MainWindow:
             if event == '-SUM_CHECK-':
                 if values['-SUM_CHECK-']: self.adjustBindedGUIElems(graphs_window, elems_to_enable=['-CB_COL_FOR_VALS-'])
                 else: self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'])
+
+            if event == '-RYSUJ-':
+                #TODO:
+                #   trzeba sprawdzić, czy są zaznaczone wszystkie potrzebne opcje 
+                etykiety, dane = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals)
+                canvas = graphs_window['-CANVAS-'].TKCanvas
+                canvas.delete('all')
+                self.drawGraph(canvas, self.createPieChart(etykiety, dane))
 
         # Zamknięcie okna
         graphs_window.close()
@@ -296,19 +312,14 @@ class MainWindow:
             new_vals = combos_new_vals[idx if len(combos_new_vals) > idx else (len(combos_new_vals) - 1)]
             window[combos_to_update[idx]].update(values=new_vals, value = new_vals[0] if bool(new_vals) else '')
 
-    def drawGraph(self, window: sg.Window, labels, sizes):
-        # Tworzenie wykresu kołowego
-        fig, ax = plt.subplots()
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%')
-        ax.axis('equal')
-
-        # Konwertowanie wykresu na obiekt Tkinter
-        canvas = figcantk(fig)
-        canvas.draw()
-
-        # Pobieranie obszaru rysowania z okna
-        canvas_elem = window['-CANVAS-'].TKCanvas
-
-        # Rysowanie wykresu w obszarze rysowania
-        canvas.get_tk_widget().pack(side='top', fill='both', expand=True)
-        canvas._tkcanvas.pack(side='top', fill='both', expand=True)
+    def drawGraph(self, canvas, figure):
+        figure_canvas_agg = FigCanvTk(figure, canvas)
+        figure_canvas_agg.draw()
+        figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
+        return figure_canvas_agg
+    
+    def createPieChart(self, labels, sizes):
+        # Utworzenie wykresu kołowego
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        plt.axis('equal')
+        return plt.gcf()

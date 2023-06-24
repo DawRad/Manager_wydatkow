@@ -106,7 +106,7 @@ class Interfejs:
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweWartZKol(nazwy_tab, nazwa_kol)
     
-    def podajDaneDoWykresu(self, tabs: list(), kolumna_etykiet: str, kolumna_wart: str, etykiety_kolumn = [], zliczaj = False):
+    def podajDaneDoWykresu(self, tabs: list(), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False):
         """ Podaje odpowiednie dane do wyrysowania wykresu.
 
         W zależności od tego, jakie parametry podano, dane mogą uwzględniać zliczone 
@@ -117,19 +117,26 @@ class Interfejs:
         tabs : list(str)
             Lista nazw tabel, które mają zostać uwzględnione
 
-        kolumna_etykiet : str
+        kol_etykiet : str
             Analizowana kolumna, która zawiera etykiety danych
 
-        kolumna_wart : str
+        kol_wart : str
             Kolumna, która zawiera wartości do sumowania
 
-        etykiety_kolumn : list(str)
+        etykiety_kol : list(str)
             Przekazuje, jakie pozycje z analizowanej kolumny są brane pod uwagę
 
-        zliczaj : bool
-            Jeżeli True - zlicza wystąpienia każdej unikatowej (lub każdej z wybranych w parametrze wart_kolumn) wartości z kolumn podanych w parametrze kolumny_celu.
-            Jeżeli False - analogicznie, jak w przeciwnym wypadku, ale nie zlicza, tylko sumuje te wartości.
-            Domyślnie = False.        
+        sumuj : bool
+            Jeżeli True - Dla każdej etykiety (lub każdej z wybranych w parametrze etykiety_kol) z analizowanej kolumny sumuje jej wartości z kolumny kol_wart.
+            Jeżeli False - nie sumuje wartości kolumn, a zlicza wystąpienia w analizowanej kolumnie.
+            Domyślnie = False.
+
+        Zwraca
+        ----------
+        Listę, której elementami również są listy:
+            - pierwsza zawiera etykiety danych
+            - druga zawiera dane
         """
 
-        pass
+        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoWykresu(tabs, kol_etykiet, kol_wart, etykiety_kol, sumuj)
+        return [list(res.keys()), list(res.values())]
