@@ -118,7 +118,7 @@ class TabWydatki(Obiekt):
             res = self.__tabela_[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else self.__tabela_[self.__tabela_[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
             res_keys, res_values = res.index.tolist(), res.values.tolist()
             res = dict[str, int]()
-            for key, value in res_keys, res_values: res[key] = value
+            for key, value in zip(res_keys, res_values): res[key] = value
         elif sumuj and kol_wart != '':
             # tu sumowane są wartości z kolumny wartości dla wszystkich lub wybranych etykiet z kolumny etykiet
             res = dict[str, float]()
