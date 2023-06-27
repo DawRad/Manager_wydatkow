@@ -78,7 +78,10 @@ class TabWydatki(Obiekt):
         
         if "Data" not in przekazane_kol or "Nazwa" not in przekazane_kol or "Kwota" not in przekazane_kol or "Wykonanie" not in przekazane_kol: 
             raise BadDFCols("DataFrame nie zawiera kolumn: \"Data\", \"Nazwa\", \"Kwota\" ani \"Wykonanie\"")
-        else: self._tabela_ = df
+        else: 
+            self._tabela_ = df
+            self._tabela_['Data'] = pd.to_datetime(self._tabela_['Data'])
+            self._tabela_['Wykonanie'] = self._tabela_['Wykonanie'].astype(bool)
 
     def podajNazwe(self):
         return self._nazwa_
@@ -159,7 +162,7 @@ class TabWydatki(Obiekt):
         for idx, row in self._tabela_.iterrows():
             if row['Data'] <= data and not row["Wykonanie"]: 
                 res += row['Kwota'] * self._mnoznik_
-                row['Wykonanie'] = True
+                self._tabela_.at[idx, 'Wykonanie'] = True
             elif row["Wykonanie"]: break
 
         return res
