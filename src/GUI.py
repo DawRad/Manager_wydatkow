@@ -1,6 +1,7 @@
 from Interfejs import Interfejs
 import PySimpleGUI as sg
 import os
+import datetime as dtm
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigCanvTk
 
@@ -11,7 +12,7 @@ class MainWindow:
         options = self.interfejs.podajListePosiadaczy()
         layout = [
             [sg.Text("Wybierz użytkownika")],
-            [sg.Combo(options, key='-COMBO-', default_value=options[0] if len(options) != 0 else "", enable_events=True)],
+            [sg.Combo(options, key='-COMBO-', default_value=options[0] if len(options) != 0 else "", enable_events=True, readonly=True)],
             [sg.Button("Dalej"), sg.Button("Dodaj nowego")],
             [sg.Button("Wyjdź")]
                   ]
@@ -54,11 +55,12 @@ class MainWindow:
                 sg.Text("Nazwisko", font=('Arial', 14, 'bold')),
                 sg.Text(key="-TEXT2-", font=('Arial', 14))
             ],
-            [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1))],
+            [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1), readonly=True)],
             [
                 sg.Button("Pokaż tabelę"),
                 sg.Button("Dodaj tabelę"),
-                sg.Button("Wykresy")
+                sg.Button("Wykresy"),
+                sg.Button("Finanse")
             ],
             [sg.Button("Powrót")]
         ]
@@ -86,6 +88,8 @@ class MainWindow:
                 user_window.enable()            
             elif event == 'Pokaż tabelę':
                 self.showTable(values['-TABS_NAMES_COMBO-'])
+            elif event == 'Finanse':
+                self.analyzeFinances()            
 
         user_window.close()
 
@@ -160,20 +164,21 @@ class MainWindow:
         layout = [
             [
                 sg.Text('Wybierz tabele:'), 
-                sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych"), 
+                sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True), 
                 sg.Text('Wybierz typ wykresu:'),
-                sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0])
+                sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0], readonly=True)
             ],
             [
                 sg.Text('Wybierz kolumny:'), 
-                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10)),
+                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10), readonly=True),
                 sg.Text('Wybierz wartości:'),
-                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True, size=(20, 10), tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych")
+                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True, size=(20, 10), 
+                         tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True)
             ],
             [
                 sg.Checkbox("Sumowanie wartości", key="-SUM_CHECK-", enable_events=True, tooltip="Jeśli zaznaczone: sumuje wartości z kolumny wartości.\nW przeciwnym wypadku zlicza wystąpienia"),
                 sg.Text('Wybierz kolumnę wartości do sumowania:'), 
-                sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True),
+                sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True, readonly=True),
             ],
             [sg.Text('Wybrane opcje:')],
             [
@@ -182,6 +187,7 @@ class MainWindow:
             ],
             [
                 sg.Button('Rysuj', key='-RYSUJ-', disabled=True),
+                sg.Button('Wyczyść', key='-CLEAR-'),
                 sg.Button('Zamknij')
             ]
         ]
@@ -191,6 +197,7 @@ class MainWindow:
         selected_tabs = []
         selected_col = ''
         selected_col_vals = []
+        canvas_fig = None        
 
         # Główna pętla metody
         while True:
@@ -219,7 +226,7 @@ class MainWindow:
                     self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-CB_COL_VALS-'])
 
                 selected_col = ''
-                selected_col_vals.clear()                    
+                selected_col_vals.clear()                           
 
                 # Wyświetlenie aktualnie wybranych opcji                
                 graphs_window['-OUTPUT-'].update('')
@@ -265,14 +272,87 @@ class MainWindow:
 
             if event == '-RYSUJ-':
                 #TODO:
-                #   trzeba sprawdzić, czy są zaznaczone wszystkie potrzebne opcje 
+                #   trzeba sprawdzić, czy są zaznaczone wszystkie potrzebne opcje
                 etykiety, dane = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals)
                 canvas = graphs_window['-CANVAS-'].TKCanvas
-                canvas.delete('all')
-                self.drawGraph(canvas, self.createPieChart(etykiety, dane))
+                if canvas_fig is not None: 
+                    canvas_fig.get_tk_widget().destroy()
+                    canvas_fig = None
+                canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
+                  
+
+            if event == '-CLEAR-':
+                if canvas_fig is not None: 
+                    canvas_fig.get_tk_widget().destroy()
+                    canvas_fig = None
 
         # Zamknięcie okna
         graphs_window.close()
+
+    def analyzeFinances(self):
+        updating_flag = True # flaga wskazująca, czy wątek uaktualniania konta ma się wykonywać
+        options = self.interfejs.podajListeNazwTabWydatkow()
+        output = {}
+
+        # Pobieranie tabeli do wydrukowania
+        df = self.interfejs.podajTabWydatki(options[0])
+        data_rows = df.values.tolist()
+        headers = df.columns.tolist()
+        
+        # kolumny layout'u
+        lay_col_1 = [
+            [
+                sg.Radio('Dodaj przychód', 'rodzaj', key='-PRZYCHOD-', enable_events=True), 
+                sg.Radio('Dodaj wydatek', 'rodzaj', key='-WYDATEK-', default=True, enable_events=True)
+            ],
+            [sg.Combo(options, options[0], enable_events=True, key='-COMBO-', tooltip="", readonly=True)],
+            [
+                sg.Button('Wczytaj dane', key='-WCZYTAJ-'),
+                sg.Button('Dodaj pozycje', key='-DODAJ-')
+            ],
+            [sg.Button('Zamknij')]
+        ]
+
+        options.append('Przychody')
+        lay_col_2 = [
+            [sg.Text("Stan konta: "), sg.Text(str(self.interfejs.uaktualnianieKonta(dtm.datetime.now())))],
+            [sg.Combo(options, options[0], enable_events=True, key='-COMBO_DISP-', tooltip="", readonly=True)],
+            [sg.Table(values=data_rows, headings=headers, justification='left', num_rows=10, key='-TABLE-')]
+        ]
+
+        # główny layout
+        layout = [
+            [sg.Column(lay_col_1), sg.Column(lay_col_2)]
+        ]
+
+        # Utworzenie okna
+        finances_window = sg.Window('Finanse', layout, finalize=False)
+        finances_window.finalize()
+
+        while True:
+            event, values = finances_window.read()
+            
+            if event == sg.WINDOW_CLOSED or event == 'Zamknij':
+                break
+
+            if event == '-WCZYTAJ-':
+                fields = self.interfejs.podajNazwyKolTabWydatkow(values['-COMBO-'])
+                self.customInputDataWindow(output, fields)
+
+            if event == '-PRZYCHOD-': finances_window['-COMBO-'].update(disabled=True)
+
+            if event == '-WYDATEK-': finances_window['-COMBO-'].update(disabled=False)
+
+            if event == '-COMBO_DISP-':
+                # Pobieranie tabeli do wydrukowania
+                df = self.interfejs.podajTabWydatki(values['-COMBO_DISP-'])
+                data_rows = df.values.tolist()
+                headers = df.columns.tolist()
+                data_rows = [[headers[i] for i in range(len(headers))]] + data_rows
+                finances_window['-TABLE-'].Update(values=data_rows)
+
+        # Zamknięcie okna
+        finances_window.close()
 
     # < - - - - - - - - - - - - - - - - - - - - > Metody pomocnicze < - - - - - - - - - - - - - - - - - - - - >
     def adjustBindedGUIElems(
@@ -304,13 +384,48 @@ class MainWindow:
         for elem in elems_to_disable: window[elem].update(disabled=True)
         for elem in elems_to_visible: window[elem].update(visible=True)
         for elem in elems_to_invisible: window[elem].update(visible=False)
-        for combo in combos_to_clear: window[combo].update(values='')
+        for combo in combos_to_clear: window[combo].update(values='')        
 
         #TODO: 
         #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
         for idx in range(len(combos_to_update)): 
             new_vals = combos_new_vals[idx if len(combos_new_vals) > idx else (len(combos_new_vals) - 1)]
             window[combos_to_update[idx]].update(values=new_vals, value = new_vals[0] if bool(new_vals) else '')
+
+    def customInputDataWindow(self, output = {}, fields = []):
+        """ Metoda pomocnicza, która umożliwia podanie przez użytkownika danych wtedy, gdy liczba pól
+        wejścia nie jest stała.
+        """
+
+        end_flag = False
+        layout = []        
+        for field in fields:
+            layout.append([sg.Text(f'{field}:'), sg.Input(key=field)])
+
+        layout.append([sg.Button('Wczytaj dane'), sg.Button('Wstecz')])
+
+        # Utworzenie okna
+        window = sg.Window('Finanse', layout, finalize=True)
+
+        while True:
+            event, values = window.read()
+            
+            if event == sg.WINDOW_CLOSED or event == 'Wstecz' or end_flag:
+                output = {}
+                break
+            if event == 'Wczytaj dane':
+                output = {}
+                end_flag = True
+                for field in fields:
+                    tmp = values[field]
+                    if tmp == '':
+                        end_flag = False
+                        sg.popup(f'Nie podano wartości dla pola: {field}')
+                        break
+                    output[field] = tmp                
+
+        # Zamknięcie okna
+        window.close()                
 
     def drawGraph(self, canvas, figure):
         figure_canvas_agg = FigCanvTk(figure, canvas)

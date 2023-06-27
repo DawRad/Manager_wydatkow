@@ -1,5 +1,4 @@
 from Fundamenty import *
-from Wyjatki import *
 
 class Interfejs:
     def __init__(self) -> None:
@@ -49,6 +48,9 @@ class Interfejs:
 
     def drukujTabWydatki(self, nazwa):
         print(self.__posiadacze_[self.__actKey_].podajTabDF(nazwa))
+
+    def uaktualnianieKonta(self, data: dtm.datetime):
+        return self.__posiadacze_[self.__actKey_].uaktualnijKonto(data)
 
     def podajListePosiadaczy(self):
         out_list = []
