@@ -2,6 +2,7 @@ import datetime as dtm
 import pandas as pd
 import numpy as np
 from functools import reduce
+from Wyjatki import *
 
 
 """
@@ -65,24 +66,31 @@ class TabWydatki(Obiekt):
     '''
     Parametr df -> parametr ty pandas.DataFrame
     '''
-    def __init__(self, nazwa_tab: str, kolumny = ["Sklep", "Data", "Towar", "Cena"], df = pd.DataFrame({'A':[]}), wart_domyslne = ("Nieznany", dtm.date.today(), "pieczywo", 4.4)) -> None:
+    def __init__(self, nazwa_tab: str, kolumny = ["Data", "Nazwa", "Kwota", "Wykonanie"], df = pd.DataFrame({'A':[]}), mnoznik = -1) -> None:
         super().__init__()
-        self.__nazwa_ = nazwa_tab
+        self._nazwa_ = nazwa_tab
+        self._mnoznik_ = mnoznik 
 
-        if not df.empty: self.__tabela_ = df
-        else: self.__tabela_ = pd.DataFrame(columns=kolumny)      
+        if not df.empty: przekazane_kol = df.columns.values
+        else: 
+            przekazane_kol = kolumny
+            df = pd.DataFrame(columns=kolumny)    
+        
+        if "Data" not in przekazane_kol or "Nazwa" not in przekazane_kol or "Kwota" not in przekazane_kol or "Wykonanie" not in przekazane_kol: 
+            raise BadDFCols("DataFrame nie zawiera kolumn: \"Data\", \"Nazwa\", \"Kwota\" ani \"Wykonanie\"")
+        else: self._tabela_ = df
 
     def podajNazwe(self):
-        return self.__nazwa_
+        return self._nazwa_
 
     def podajNazwyKol(self):
-        return self.__tabela_.columns.values
+        return self._tabela_.columns.values
     
     def podajDF(self):
-        return self.__tabela_
+        return self._tabela_
     
     def podajUnikatoweWartZKol(self, nazwa_kol: str) -> None | np.ndarray:
-        """ Podaje tylko niepowtarzające się wartości z danej kolumny pola TabWydatki.__tabela_
+        """ Podaje tylko niepowtarzające się wartości z danej kolumny pola TabWydatki._tabela_
 
         Parametry
         ----------
@@ -95,8 +103,8 @@ class TabWydatki(Obiekt):
         """
 
         res = None
-        if nazwa_kol in self.__tabela_.columns.values: 
-            res = self.__tabela_[nazwa_kol].unique()
+        if nazwa_kol in self._tabela_.columns.values: 
+            res = self._tabela_[nazwa_kol].unique()
             res.sort()
 
         return res
@@ -115,7 +123,7 @@ class TabWydatki(Obiekt):
         res = {}
         if not sumuj:
             # tu zliczane są tylko wystąpienia unikalnych wartości z kolumny etykiet
-            res = self.__tabela_[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else self.__tabela_[self.__tabela_[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
+            res = self._tabela_[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else self._tabela_[self._tabela_[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
             res_keys, res_values = res.index.tolist(), res.values.tolist()
             res = dict[str, int]()
             for key, value in zip(res_keys, res_values): res[key] = value
@@ -124,17 +132,44 @@ class TabWydatki(Obiekt):
             res = dict[str, float]()
             if len(wart_kolumn) == 0:
                 # jeżeli nie ma wybranych wartości kolumny etykiet do uwzględnienia
-                for idx, row in self.__tabela_.iterrows(): res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
+                for idx, row in self._tabela_.iterrows(): res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
             else:
                 # gdy uwzględniamy tylko wybrane wartości kolumny etykiet
-                for idx, row in self.__tabela_.iterrows(): 
+                for idx, row in self._tabela_.iterrows(): 
                     if row[kol_etykiet] in wart_kolumn: res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
 
         return res
     
-    def dolaczDF(self, new_df):
-        self.__tabela_ = pd.concat([self.__tabela_, new_df], ignore_index=True)
+    def podajSumeDoUaktualKonta(self, data: dtm.datetime):
+        """ Oblicza kwotę, o jaką powinno zostać zaktualizowane konto.
+
+        Kwota może być ujemna, gdy uwzględniane są wydatki lub dodatnia, gdy chodzi o przychody.
+        Dodatkowo, metoda uaktualnia stan każdej z pozycji tabeli - jeśli jakiś wiersz wg podanej daty ma zostać uwzględniony
+        w bilansie, wtedy wartość kolumny 'Wykonanie' jest zmieniana na True.
+
+        Parametry
+        ----------
+        data : datetime.datetime
+            Dzień oraz godzina odniesienia - jeśli data rozpatrywanej pozycji jest dokładnie taka, jak podana, lub wcześniejsza, wtedy
+            pozycja jest uwzględniana w rachunkach.
+        """
+
+        res = 0.0
+        self._tabela_ = self._tabela_.sort_values(['Wykonanie', 'Data'], ascending=[True, False])
+        for idx, row in self._tabela_.iterrows():
+            if row['Data'] <= data and not row["Wykonanie"]: 
+                res += row['Kwota'] * self._mnoznik_
+                row['Wykonanie'] = True
+            elif row["Wykonanie"]: break
+
+        return res
     
+    def dolaczDF(self, new_df):
+        self._tabela_ = pd.concat([self._tabela_, new_df], ignore_index=True)
+
+    def dodajWiersz(self, wiersz: pd.Series):
+        pd.concat([self._tabela_, wiersz.T], ignore_index=True)           
+
 
 """
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - \
@@ -142,12 +177,13 @@ class TabWydatki(Obiekt):
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  - - - /
 """
 class Posiadacz(Obiekt):
-    def __init__(self, imie: str, nazwisko: str) -> None:
+    def __init__(self, imie: str, nazwisko: str, zasoby: float = 0.0) -> None:
         super().__init__()
         self.__tabWydatki_ = dict[str, TabWydatki]()
+        self.__tabPrzychody_ = TabWydatki("Przychody", mnoznik=1)
         self.__imie_ = imie
         self.__nazwisko_ = nazwisko
-        self.__zasoby_ = dict[str, Zasob]()
+        self.__zasoby_ = zasoby
         self.__hash_ = (self.__imie_ + self.__nazwisko_).lower()
 
     def podajHash(self):
@@ -229,6 +265,34 @@ class Posiadacz(Obiekt):
     def dodajWierszWTab(self, new_row: list, nazwa_tab = " "):
         tabela = self.__tabWydatki_.get(nazwa_tab, None)
         if tabela is not None: tabela.loc[len(tabela)] = new_row
+
+    def dodajWierszFinansow(self, nowy_wiersz: pd.Series, rodzaj_tab: str = 'Przychody', nazwa_tab_wydatki = ''):
+        if rodzaj_tab == 'Przychody':
+            self.__tabPrzychody_.dodajWiersz(nowy_wiersz)
+        if rodzaj_tab == 'Wydatki':
+            if self.__tabWydatki_.get(nazwa_tab_wydatki, None) is None: raise MissingKeyError("Tabela wydatków o podanym kluczu - \"" + nazwa_tab_wydatki + "\" - nie istnieje")
+            self.__tabWydatki_[nazwa_tab_wydatki].dodajWiersz(nowy_wiersz)
+
+    def uaktualnijKonto(self, data: dtm.datetime):
+        """ Wykonuje metody wyznaczające kwotę do uaktualnienia konta dla każdej z tabel wydatków lub przychodów posiadacza.
+
+        Parametry
+        ----------
+        data : datetime.datetime
+            Dzień i godzina, według których obliczane jest uaktualnienie.
+
+        Zwraca
+        ----------
+        Uaktualniony stan konta.
+        """
+
+        res = 0.0
+        res += self.__tabPrzychody_.podajSumeDoUaktualKonta(data)
+        for key in self.__tabWydatki_.keys(): res += self.__tabWydatki_[key].podajSumeDoUaktualKonta(data)
+
+        self.__zasoby_ += res
+        
+        return self.__zasoby_
 
     def dolaczDoTab(self, nazwa_tab, new_df):
         target = self.podajTab(nazwa_tab)
