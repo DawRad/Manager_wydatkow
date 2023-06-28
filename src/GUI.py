@@ -99,7 +99,7 @@ class MainWindow:
                 sg.Text("Wybierz plik", font=('Arial', 14, 'bold'), key='-FILE_PATH-'),
                 sg.FileBrowse(key='-BROWSE-')
             ],
-            [sg.Checkbox("Dołącz do tabeli", tooltip="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-", change_submits=True, enable_events=True)],
+            [sg.Checkbox("Dołącz do tabeli", tooltip="Wczytana tabela zostanie dołączona do tabeli już istniejącej", key="-JOIN_CHECK-", enable_events=True)],
             [
                 sg.Text("Nazwa tabeli", key='-SUBMIT_TEXT-', visible=False),
                 sg.Input(key='-INPUT-', visible=False),
@@ -158,9 +158,16 @@ class MainWindow:
         show_tab_window.close()
 
     def drawGraphs(self):
+        # Lokalne zmienne
         graph_types = ["kołowy", "słupkowy"]
         options = self.interfejs.podajListeNazwTabWydatkow()
-        # Utworzenie layoutu dla okna
+
+        selected_tabs = []
+        selected_col = ''
+        selected_col_vals = []
+        canvas_fig = None         
+
+        # Utworzenie głównego layoutu dla okna
         layout = [
             [
                 sg.Text('Wybierz tabele:'), 
@@ -193,11 +200,7 @@ class MainWindow:
         ]
 
         # Utworzenie okna
-        graphs_window = sg.Window('Wykresy', layout, finalize=True)
-        selected_tabs = []
-        selected_col = ''
-        selected_col_vals = []
-        canvas_fig = None        
+        graphs_window = sg.Window('Wykresy', layout, finalize=True)               
 
         # Główna pętla metody
         while True:
@@ -267,19 +270,36 @@ class MainWindow:
                 print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')
 
             if event == '-SUM_CHECK-':
-                if values['-SUM_CHECK-']: self.adjustBindedGUIElems(graphs_window, elems_to_enable=['-CB_COL_FOR_VALS-'])
-                else: self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'])
+                if not values['-SUM_CHECK-'] and bool(selected_tabs) and selected_col != '' and bool(selected_col_vals) and canvas_fig is not None:
+                    # Jeśli wcześniej był narysowany wykres zsumowanych wartości, to po odznaczeniu opcji sumowania od razu rysowany jest wykres zliczeń
+                    self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'], combos_to_clear=['-CB_COL_FOR_VALS-'])
+                    canvas = graphs_window['-CANVAS-'].TKCanvas
+                    etykiety, dane = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, values['-CB_COL_FOR_VALS-'], etykiety_kol=selected_col_vals)
+                    canvas_fig.get_tk_widget().destroy()
+                    canvas_fig = None
+                    plt.close('all')
+                    canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
+
+                elif values['-SUM_CHECK-'] and bool(selected_tabs):
+                    self.adjustBindedGUIElems(graphs_window, elems_to_enable=['-CB_COL_FOR_VALS-'], combos_to_update=['-CB_COL_FOR_VALS-'], combos_new_vals=[self.interfejs.podajUnikatNazwyKolNumer(selected_tabs)])
+
+                else:
+                    self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'], combos_to_clear=['-CB_COL_FOR_VALS-'])
 
             if event == '-RYSUJ-':
                 #TODO:
                 #   trzeba sprawdzić, czy są zaznaczone wszystkie potrzebne opcje
-                etykiety, dane = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals)
-                canvas = graphs_window['-CANVAS-'].TKCanvas
-                if canvas_fig is not None: 
-                    canvas_fig.get_tk_widget().destroy()
-                    canvas_fig = None
-                    plt.close('all')
-                canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
+                if values['-CB_GRAPH_TYPE-'] == 'kołowy':
+                    [etykiety, dane] = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals) if not values['-SUM_CHECK-'] else self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, values['-CB_COL_FOR_VALS-'], etykiety_kol=selected_col_vals, sumuj=True)
+                    canvas = graphs_window['-CANVAS-'].TKCanvas
+                    if canvas_fig is not None: 
+                        canvas_fig.get_tk_widget().destroy()
+                        canvas_fig = None
+                        plt.close('all')
+                    canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
+
+                if values['-CB_GRAPH_TYPE-'] == 'słupkowy':
+                    pass
 
             if event == '-CLEAR-':
                 if canvas_fig is not None: 
@@ -381,11 +401,11 @@ class MainWindow:
             Lista nazw elementów typu PySimpleGUI.Combo do całkowitego usunięcia zawartych opcji
         """
 
-        for elem in elems_to_enable: window[elem].update(disabled=False)
-        for elem in elems_to_disable: window[elem].update(disabled=True)
+        for elem in elems_to_enable: window[elem].update(disabled=False)        
         for elem in elems_to_visible: window[elem].update(visible=True)
         for elem in elems_to_invisible: window[elem].update(visible=False)
-        for combo in combos_to_clear: window[combo].update(values='')        
+        for combo in combos_to_clear: window[combo].update(values='')
+        for elem in elems_to_disable: window[elem].update(disabled=True)     
 
         #TODO: 
         #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
@@ -434,8 +454,8 @@ class MainWindow:
         figure_canvas_agg.get_tk_widget().pack(side='top', fill='both', expand=1)
         return figure_canvas_agg
     
-    def createPieChart(self, labels, sizes):
+    def createPieChart(self, labels, sizes, autopct='%1.2f%%'):
         # Utworzenie wykresu kołowego
-        plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        plt.pie(sizes, labels=labels, autopct=autopct, startangle=90)
         plt.axis('equal')
         return plt.gcf()
