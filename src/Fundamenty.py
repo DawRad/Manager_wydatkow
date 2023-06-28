@@ -89,6 +89,9 @@ class TabWydatki(Obiekt):
     def podajNazwyKol(self):
         return self._tabela_.columns.values
     
+    def podajNazwyKolNumer(self):
+        return self._tabela_.select_dtypes(['number']).columns
+    
     def podajDF(self):
         return self._tabela_
     
@@ -214,6 +217,14 @@ class Posiadacz(Obiekt):
     def podajUnikatoweNazwyKol(self, nazwy_tab: list()):
         res = []
         for nazwa in nazwy_tab: res.append(self.__tabWydatki_[nazwa].podajNazwyKol())
+        if len(res) > 1: res = reduce(np.union1d, res).tolist()
+        elif len(res) == 1: res = sorted(res[0].tolist())
+
+        return res
+    
+    def podajUnikatNazwyKolNumer(self, nazwy_tab: list[str]()):
+        res = []
+        for nazwa in nazwy_tab: res.append(self.__tabWydatki_[nazwa].podajNazwyKolNumer())
         if len(res) > 1: res = reduce(np.union1d, res).tolist()
         elif len(res) == 1: res = sorted(res[0].tolist())
 
