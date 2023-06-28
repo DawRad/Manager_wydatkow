@@ -278,13 +278,14 @@ class MainWindow:
                 if canvas_fig is not None: 
                     canvas_fig.get_tk_widget().destroy()
                     canvas_fig = None
+                    plt.close('all')
                 canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
-                  
 
             if event == '-CLEAR-':
                 if canvas_fig is not None: 
                     canvas_fig.get_tk_widget().destroy()
                     canvas_fig = None
+                    plt.close('all')
 
         # Zamknięcie okna
         graphs_window.close()
