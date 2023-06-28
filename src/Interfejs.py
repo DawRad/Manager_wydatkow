@@ -1,6 +1,9 @@
 from Fundamenty import *
 
 class Interfejs:
+    """ Klasa zarządzająca obiektami z modułu `<Fundamenty>`
+    """
+
     def __init__(self) -> None:
         self.__posiadacze_ = dict[str, Posiadacz]()
         self.__actKey_ = "" # klucz, który wskazuje obiekt typu Posiadacz, na którym aktualnie dokonuje się wszystkich akcji
@@ -79,14 +82,22 @@ class Interfejs:
         return result
     
     def podajUnikatoweNazwyKol(self, nazwy_tab: list()):
-        """ Podaje unikatowe nazwy ze wszystkich podanych kolumn.
+        """ Podaje unikatowe nazwy kolumn ze wszystkich podanych tabel.
 
         Zwraca
         ----------
-        list(str) : Listę z unikalnymi nazwami kolumn ze wszystkich podanych tabel.
+        list(str) : Listę z unikalnymi nazwami kolumn.
         """
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweNazwyKol(nazwy_tab)
+    
+    def podajUnikatNazwyKolNumer(self, nazwy_tab: list[str]()):
+        """ Wyznacza unikatowe nazwy kolumn numerycznych.
+
+        Podobne działanie do `<Interfejs.Interfejs.podajUnikatoweNazwyKol>`
+        """
+
+        return self.__posiadacze_[self.__actKey_].podajUnikatNazwyKolNumer(nazwy_tab)
     
     def podajUnikatoweWartZKol(self, nazwy_tab: list(), nazwa_kol: str):
         """ Zwraca listę unikatowych wartości z danej kolumny tabeli. 
