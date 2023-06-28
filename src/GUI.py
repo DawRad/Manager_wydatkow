@@ -8,17 +8,19 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigCanvTk
 class MainWindow:
     def __init__(self, interfejs: Interfejs) -> None:
         self.interfejs = interfejs
-
         options = self.interfejs.podajListePosiadaczy()
+
         layout = [
-            [sg.Text("Wybierz użytkownika")],
-            [sg.Combo(options, key='-COMBO-', default_value=options[0] if len(options) != 0 else "", enable_events=True, readonly=True)],
+            [
+                sg.Text("Wybierz użytkownika:"),
+                sg.Combo(options, key='-COMBO-', default_value=options[0] if len(options) != 0 else "", enable_events=True, readonly=True)
+            ],
             [sg.Button("Dalej"), sg.Button("Dodaj nowego")],
             [sg.Button("Wyjdź")]
-                  ]
-        
+        ]
+
         # Create the window
-        window = sg.Window('Manager wydatków', layout)
+        window = sg.Window('Manager wydatków', layout, element_justification='center')
 
         # deaktywowanie przycisku "Dalej" w przypadku, gdy nie ma jeszcze dodanych użytkowników
         window.read(timeout=1)
@@ -48,23 +50,39 @@ class MainWindow:
     # < - - - - - - - - - - - - - - - - - - - - > Metody okien pobocznych < - - - - - - - - - - - - - - - - - - - - > 
     def userWindowLoop(self):
         tab_options = self.interfejs.podajListeNazwTabWydatkow()
-        user_layout = [
+        
+        # Składowe kontenery layout'u
+        frame = [
             [
                 sg.Text("Imie", font=('Arial', 14, 'bold')),
-                sg.Text(key="-TEXT1-", font=('Arial', 14)),
+                sg.Text(key="-TEXT1-", font=('Arial', 14))
+            ],
+            [
                 sg.Text("Nazwisko", font=('Arial', 14, 'bold')),
                 sg.Text(key="-TEXT2-", font=('Arial', 14))
-            ],
-            [sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1), readonly=True)],
+            ]
+        ]
+        
+        # Główny layout
+        user_layout = [
+            [sg.Frame('Dane użytkownika', frame)],
             [
-                sg.Button("Pokaż tabelę"),
+                sg.Text("Wybrana tabela:"),
+                sg.Combo(tab_options, default_value = "" if len(tab_options) == 0 else tab_options[0], key="-TABS_NAMES_COMBO-", enable_events=True, size=(20,1), readonly=True),
+                sg.Button("Pokaż tabelę")
+            ],
+            [                
                 sg.Button("Dodaj tabelę"),
                 sg.Button("Wykresy"),
                 sg.Button("Finanse")
             ],
-            [sg.Button("Powrót")]
+            [sg.Text(''), sg.Button("Powrót")]
         ]
+
+        # Tworzenie okna
         user_window = sg.Window("Okno użytkownika", user_layout, size=(400, 200))
+
+        # Ustawianie początkowych stanów i wartości
         event, values = user_window.read(timeout=1)
         imie, nazw = self.interfejs.podajDanePosiadacza()
         user_window['-TEXT1-'].update(imie)
