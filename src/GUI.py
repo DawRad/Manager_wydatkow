@@ -165,37 +165,44 @@ class MainWindow:
         selected_tabs = []
         selected_col = ''
         selected_col_vals = []
-        canvas_fig = None         
+        canvas_fig = None 
 
-        # Utworzenie głównego layoutu dla okna
-        layout = [
+        # Kolumny layout'u
+        lay_col_1 = [
+            [sg.Text('Wybierz typ wykresu:')],
+            [sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0], readonly=True)],
+            [sg.Text('Wybierz tabele:')],
+            [sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True)],
+            [sg.Text('Wybierz kolumny:')],
+            [sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10), readonly=True)],
+            [sg.Text('Wybierz wartości:')],
             [
-                sg.Text('Wybierz tabele:'), 
-                sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True), 
-                sg.Text('Wybierz typ wykresu:'),
-                sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0], readonly=True)
-            ],
-            [
-                sg.Text('Wybierz kolumny:'), 
-                sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10), readonly=True),
-                sg.Text('Wybierz wartości:'),
                 sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True, size=(20, 10), 
                          tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True)
-            ],
-            [
-                sg.Checkbox("Sumowanie wartości", key="-SUM_CHECK-", enable_events=True, tooltip="Jeśli zaznaczone: sumuje wartości z kolumny wartości.\nW przeciwnym wypadku zlicza wystąpienia"),
-                sg.Text('Wybierz kolumnę wartości do sumowania:'), 
-                sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True, readonly=True),
-            ],
+            ]
+        ]
+
+        lay_col_2 = [
+            [sg.Checkbox("Sumowanie wartości", key="-SUM_CHECK-", enable_events=True, tooltip="Jeśli zaznaczone: sumuje wartości z kolumny wartości.\nW przeciwnym wypadku zlicza wystąpienia")],
+            [sg.Text('Wybierz kolumnę wartości do sumowania:')],
+            [sg.Combo([], enable_events=True, key='-CB_COL_FOR_VALS-', auto_size_text=True, size=(20, 10), disabled=True, readonly=True)],
             [sg.Text('Wybrane opcje:')],
-            [
-                sg.Output(size=(30, 5), key='-OUTPUT-'),
-                sg.Canvas(size=(400, 400), key='-CANVAS-')
-            ],
+            [sg.Output(size=(30, 10), key='-OUTPUT-')],
             [
                 sg.Button('Rysuj', key='-RYSUJ-', disabled=True),
                 sg.Button('Wyczyść', key='-CLEAR-'),
                 sg.Button('Zamknij')
+            ]
+        ]
+
+        lay_col_3 = [[sg.Canvas(size=(400, 400), key='-CANVAS-')]] 
+
+        # Utworzenie głównego layout'u dla okna
+        layout = [
+            [
+                sg.Column(lay_col_1),
+                sg.Column(lay_col_2),
+                sg.Column(lay_col_3)
             ]
         ]
 
