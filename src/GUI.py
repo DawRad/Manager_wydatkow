@@ -190,14 +190,11 @@ class MainWindow:
             [sg.Text('Wybierz typ wykresu:')],
             [sg.Combo(graph_types, enable_events=True, key='-CB_GRAPH_TYPE-', default_value=graph_types[0], readonly=True)],
             [sg.Text('Wybierz tabele:')],
-            [sg.Combo(options, enable_events=True, key='-COMBO-', tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True)],
+            [sg.Listbox(options, enable_events=True, select_mode='multiple', key='-LISTBOX-', size=(20, 3))],
             [sg.Text('Wybierz kolumny:')],
             [sg.Combo([], enable_events=True, key='-CB_COLS-', auto_size_text=True, size=(20, 10), readonly=True)],
             [sg.Text('Wybierz wartości:')],
-            [
-                sg.Combo([], enable_events=True, key='-CB_COL_VALS-', auto_size_text=True, size=(20, 10), 
-                         tooltip="Ponowne wybranie danej opcji usuwa ją z listy wybranych", readonly=True)
-            ]
+            [sg.Listbox([], enable_events=True, select_mode='multiple', key='-LB_COL_VALS-', size=(20, 3))]
         ]
 
         lay_col_2 = [
@@ -235,23 +232,16 @@ class MainWindow:
                 break
             
             # Obsługa zdarzenia wyboru elementu w liście tabel
-            if event == '-COMBO-':
-                selected_option = values['-COMBO-']
-                
-                # Aktualizacja wartości pól wyboru na podstawie wybranej opcji
-                if selected_option in selected_tabs:
-                    selected_tabs.remove(selected_option)
-                else:
-                    selected_tabs.append(selected_option)
-                selected_tabs = sorted(selected_tabs)
+            if event == '-LISTBOX-':
+                selected_tabs = values['-LISTBOX-']
 
                 # Aktualizacja listy z nazwami kolumn
                 if bool(selected_tabs): self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COLS-'], 
                                                                   combos_new_vals=[self.interfejs.podajUnikatoweNazwyKol(selected_tabs)],
-                                                                  combos_to_clear=['-CB_COL_VALS-']
+                                                                  combos_to_clear=['-LB_COL_VALS-']
                                                                   )
                 else:  
-                    self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-CB_COL_VALS-'])
+                    self.adjustBindedGUIElems(graphs_window, combos_to_clear=['-CB_COLS-', '-LB_COL_VALS-'])
 
                 selected_col = ''
                 selected_col_vals.clear()                           
@@ -267,7 +257,7 @@ class MainWindow:
                 if values['-CB_COLS-'] != selected_col:
                     selected_col = values['-CB_COLS-']
                     selected_col_vals = []
-                    self.adjustBindedGUIElems(graphs_window, combos_to_update=['-CB_COL_VALS-'], 
+                    self.adjustBindedGUIElems(graphs_window, combos_to_update=['-LB_COL_VALS-'], 
                                             combos_new_vals=[self.interfejs.podajUnikatoweWartZKol(selected_tabs, selected_col)]
                                             )
                     
@@ -278,15 +268,8 @@ class MainWindow:
                     print("Wybrana kolumna:\n",selected_col, '\n')
                     print("Wybrane wartości kolumn:\n",selected_col_vals, '\n')
                 
-            if event == '-CB_COL_VALS-':
-                selected_option = values['-CB_COL_VALS-']
-                
-                # Aktualizacja wartości pól wyboru na podstawie wybranej opcji
-                if selected_option in selected_col_vals:
-                    selected_col_vals.remove(selected_option)
-                else:
-                    selected_col_vals.append(selected_option)
-                selected_col_vals = sorted(selected_col_vals)  
+            if event == '-LB_COL_VALS-':
+                selected_col_vals = values['-LB_COL_VALS-'] 
 
                 # Wyświetlenie aktualnie wybranych opcji                
                 graphs_window['-OUTPUT-'].update('')
@@ -416,7 +399,7 @@ class MainWindow:
         elems_to_invisible : list()
 
         combos_to_update : list()
-            Lista nazw elementów typu PySimpleGUI.Combo do zaktualizowania zawartych opcji
+            Lista nazw elementów typu PySimpleGUI.Combo lub PySimpleGUI.Listbox do zaktualizowania zawartych opcji
 
         combos_new_vals : list()
             Zawiera listę z nowymi opcjami dla każdego elementu z combos_to_update. Jeżeli zawiera mniej list wartości niż elementów
@@ -436,7 +419,8 @@ class MainWindow:
         #   Uwzględnić, który element w aktualizowanych Combo listach ma być ustawiony jako domyślny.
         for idx in range(len(combos_to_update)): 
             new_vals = combos_new_vals[idx if len(combos_new_vals) > idx else (len(combos_new_vals) - 1)]
-            window[combos_to_update[idx]].update(values=new_vals, value = new_vals[0] if bool(new_vals) else '')
+            if isinstance(window[combos_to_update[idx]], sg.Combo): window[combos_to_update[idx]].update(values=new_vals, value = new_vals[0] if bool(new_vals) else '')
+            else: window[combos_to_update[idx]].update(values=new_vals)
 
     def customInputDataWindow(self, output = {}, fields = []):
         """ Metoda pomocnicza, która umożliwia podanie przez użytkownika danych wtedy, gdy liczba pól
