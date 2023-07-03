@@ -347,8 +347,17 @@ class MainWindow:
                         plt.close('all')
                     canvas_fig = self.drawGraph(canvas, self.createPieChart(etykiety, dane))
 
-                if values['-CB_GRAPH_TYPE-'] == 'słupkowy':
+                if values['-CB_GRAPH_TYPE-'] == "słupkowy - zestawienie serii":
                     pass
+
+                if values['-CB_GRAPH_TYPE-'] == "słupkowy - bilans finansów":
+                    dane = self.interfejs.podajDaneDoBilansu(start_date=start_date, end_date=end_date)
+                    canvas = graphs_window['-CANVAS-'].TKCanvas
+                    if canvas_fig is not None: 
+                        canvas_fig.get_tk_widget().destroy()
+                        canvas_fig = None
+                        plt.close('all')
+                    canvas_fig = self.drawGraph(canvas, self.createBarPlot([dane[0], dane[2]], [dane[1], dane[3]]))
 
             if event == '-CLEAR-':
                 if canvas_fig is not None: 
@@ -570,6 +579,20 @@ class MainWindow:
         # Utworzenie wykresu kołowego
         plt.pie(sizes, labels=labels, autopct=autopct, startangle=90)
         plt.axis('equal')
+        return plt.gcf()
+    
+    def createBarPlot(self, x, y):
+        # Tworzenie wykresu słupkowego
+        plt.bar(x[0], y[0], label='Serie 1')
+        plt.bar(x[0], y[1], label='Serie 2')
+
+        # Dodanie legendy
+        plt.legend()
+
+        # Dodanie etykiet osi
+        plt.xlabel('Miesiące')
+        plt.ylabel('Wartości')
+
         return plt.gcf()
     
     def addDateChoiceStruct(self, layout: list()):
