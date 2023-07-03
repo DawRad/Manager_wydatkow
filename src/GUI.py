@@ -2,6 +2,7 @@ from Interfejs import Interfejs
 import PySimpleGUI as sg
 import os
 import datetime as dtm
+import calendar as cld
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigCanvTk
 
@@ -177,13 +178,15 @@ class MainWindow:
 
     def drawGraphs(self):
         # Lokalne zmienne
-        graph_types = ["kołowy", "słupkowy"]
+        graph_types = ["kołowy", "słupkowy - zestawienie serii", "słupkowy - bilans finansów"]        
         options = self.interfejs.podajListeNazwTabWydatkow()
 
+        start_date = None
+        end_date = None
         selected_tabs = []
         selected_col = ''
         selected_col_vals = []
-        canvas_fig = None 
+        canvas_fig = None
 
         # Kolumny layout'u
         lay_col_1 = [
@@ -210,6 +213,9 @@ class MainWindow:
             ]
         ]
 
+        lay_row_12 = []
+        self.addDateChoiceStruct(lay_row_12)
+
         lay_col_3 = [[sg.Canvas(size=(400, 400), key='-CANVAS-')]] 
 
         # Utworzenie głównego layout'u dla okna
@@ -217,6 +223,7 @@ class MainWindow:
             [
                 sg.Column(lay_col_1),
                 sg.Column(lay_col_2),
+                lay_row_12,
                 sg.Column(lay_col_3)
             ]
         ]
@@ -294,11 +301,45 @@ class MainWindow:
                 else:
                     self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_COL_FOR_VALS-'], combos_to_clear=['-CB_COL_FOR_VALS-'])
 
-            if event == '-RYSUJ-':
+            if event == '-RYSUJ-':                
                 #TODO:
                 #   trzeba sprawdzić, czy są zaznaczone wszystkie potrzebne opcje
+                if (values['-START_DATE-'] and not str(values['-INPUT_START_YEAR-']).isdecimal()) or (values['-END_DATE-'] and not str(values['-INPUT_END_YEAR-']).isdecimal()):
+                    sg.popup('Podany rok musi być liczbą całkowitą!')
+                    continue
+
+                if values['-START_DATE-']:
+                    year = int(values['-INPUT_START_YEAR-'])
+                    month = values['-CB_START_MONTH-'] if values['-CB_START_MONTH-'] != '-' else 1
+                    start_date = dtm.datetime(
+                        year,
+                        month,
+                        values['-CB_START_DAY-'] if values['-CB_START_DAY-'] != '-' else 1,
+                        values['-CB_START_HOUR-'] if values['-CB_START_HOUR-'] != '-' else 0,
+                        values['-CB_START_MIN-'] if values['-CB_START_MIN-'] != '-' else 0,
+                        values['-CB_START_SEC-'] if values['-CB_START_SEC-'] != '-' else 0
+                    )
+
+                if values['-END_DATE-']:
+                    year = int(values['-INPUT_END_YEAR-'])
+                    month = values['-CB_END_MONTH-'] if values['-CB_END_MONTH-'] != '-' else 12
+                    _, day = cld.monthrange(year, month)
+                    day = values['-CB_END_DAY-'] if values['-CB_END_DAY-'] != '-' else day
+                    end_date = dtm.datetime(
+                        year,
+                        month,
+                        day,
+                        values['-CB_END_HOUR-'] if values['-CB_END_HOUR-'] != '-' else 23,
+                        values['-CB_END_MIN-'] if values['-CB_END_MIN-'] != '-' else 59,
+                        values['-CB_END_SEC-'] if values['-CB_END_SEC-'] != '-' else 59
+                    )
+
+                if start_date is not None and end_date is not None and start_date > end_date:
+                    sg.popup('Początkowa data musi być wcześniejsza!')
+                    continue
+
                 if values['-CB_GRAPH_TYPE-'] == 'kołowy':
-                    [etykiety, dane] = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals) if not values['-SUM_CHECK-'] else self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, values['-CB_COL_FOR_VALS-'], etykiety_kol=selected_col_vals, sumuj=True)
+                    [etykiety, dane] = self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, etykiety_kol=selected_col_vals, start_date=start_date, end_date=end_date) if not values['-SUM_CHECK-'] else self.interfejs.podajDaneDoWykresu(selected_tabs, selected_col, values['-CB_COL_FOR_VALS-'], etykiety_kol=selected_col_vals, sumuj=True, start_date=start_date, end_date=end_date)
                     canvas = graphs_window['-CANVAS-'].TKCanvas
                     if canvas_fig is not None: 
                         canvas_fig.get_tk_widget().destroy()
@@ -314,6 +355,68 @@ class MainWindow:
                     canvas_fig.get_tk_widget().destroy()
                     canvas_fig = None
                     plt.close('all')
+
+            if event == '-START_DATE-':
+                if values['-START_DATE-']: 
+                    self.adjustBindedGUIElems(graphs_window, ['-CB_START_DAY-', '-CB_START_MONTH-', '-INPUT_START_YEAR-', '-CB_START_HOUR-', '-CB_START_MIN-', '-CB_START_SEC-'])
+                    start_date = dtm.datetime(
+                        int(values['-INPUT_START_YEAR-']),
+                        values['-CB_START_MONTH-'] if values['-CB_START_MONTH-'] != '-' else 1,
+                        values['-CB_START_DAY-'] if values['-CB_START_DAY-'] != '-' else 1,
+                        values['-CB_START_HOUR-'] if values['-CB_START_HOUR-'] != '-' else 0,
+                        values['-CB_START_MIN-'] if values['-CB_START_MIN-'] != '-' else 0,
+                        values['-CB_START_SEC-'] if values['-CB_START_SEC-'] != '-' else 0
+                    )                    
+                else: 
+                    self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_START_DAY-', '-CB_START_MONTH-', '-INPUT_START_YEAR-', '-CB_START_HOUR-', '-CB_START_MIN-', '-CB_START_SEC-'])
+                    start_date = None
+
+            if event == '-END_DATE-':
+                if values['-END_DATE-']: 
+                    self.adjustBindedGUIElems(graphs_window, ['-CB_END_DAY-', '-CB_END_MONTH-', '-INPUT_END_YEAR-', '-CB_END_HOUR-', '-CB_END_MIN-', '-CB_END_SEC-'])
+                    year = int(values['-INPUT_END_YEAR-'])
+                    month = values['-CB_END_MONTH-'] if values['-CB_END_MONTH-'] != '-' else 12
+                    _, day = cld.monthrange(year, month)
+                    day = values['-CB_END_DAY-'] if values['-CB_END_DAY-'] != '-' else day
+                    end_date = dtm.datetime(
+                        year,
+                        month,
+                        day,
+                        values['-CB_END_HOUR-'] if values['-CB_END_HOUR-'] != '-' else 23,
+                        values['-CB_END_MIN-'] if values['-CB_END_MIN-'] != '-' else 59,
+                        values['-CB_END_SEC-'] if values['-CB_END_SEC-'] != '-' else 59
+                    )
+                else: 
+                    self.adjustBindedGUIElems(graphs_window, elems_to_disable=['-CB_END_DAY-', '-CB_END_MONTH-', '-INPUT_END_YEAR-', '-CB_END_HOUR-', '-CB_END_MIN-', '-CB_END_SEC-'])
+                    end_date = None
+            
+            if event == '-CB_START_MONTH-':
+                # Sprawdzenie poprawności podanego roku
+                if str(values['-INPUT_START_YEAR-']).isdecimal(): year = int(values['-INPUT_START_YEAR-'])
+                else:
+                    sg.popup("Rok musi być liczbą całkowitą!")
+                    continue
+
+                if values['-CB_START_MONTH-'] == '-': graphs_window['-CB_START_DAY-'].update(disabled=True)
+                else:
+                    _, max_day = cld.monthrange(year, values['-CB_START_MONTH-'])
+                    new_vals = [i for i in range(1, max_day + 1)]
+                    new_vals.append('-')
+                    graphs_window['-CB_START_DAY-'].update(values=new_vals, value=new_vals[0], disabled=False)
+
+            if event == '-CB_END_MONTH-':
+                # Sprawdzenie poprawności podanego roku
+                if str(values['-INPUT_END_YEAR-']).isdecimal(): year = int(values['-INPUT_END_YEAR-'])
+                else:
+                    sg.popup("Rok musi być liczbą całkowitą!")
+                    continue
+
+                if values['-CB_END_MONTH-'] == '-': graphs_window['-CB_END_DAY-'].update(disabled=True)
+                else:
+                    _, max_day = cld.monthrange(year, values['-CB_END_MONTH-'])
+                    new_vals = [i for i in range(1, max_day + 1)]
+                    new_vals.append('-')
+                    graphs_window['-CB_END_DAY-'].update(values=new_vals, value=new_vals[0], disabled=False)
 
         # Zamknięcie okna
         graphs_window.close()
@@ -468,3 +571,47 @@ class MainWindow:
         plt.pie(sizes, labels=labels, autopct=autopct, startangle=90)
         plt.axis('equal')
         return plt.gcf()
+    
+    def addDateChoiceStruct(self, layout: list()):
+        days = [i for i in range(1, 32)]
+        days.append('-')
+        months = [i for i in range(1, 13)]
+        months.append('-')
+        hours = [i for i in range(0, 24)]
+        hours.append('-')
+        mins_secs = [i for i in range(0, 60)]
+        mins_secs.append('-')
+
+        layout.append([sg.Checkbox("Podaj początkową datę (dd-mm-yyyy  hh-mm-ss)", key="-START_DATE-", enable_events=True)])
+        layout.append(
+            [
+                sg.Combo(days, days[0], enable_events=True, key='-CB_START_DAY-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' - '),
+                sg.Combo(months, months[0], enable_events=True, key='-CB_START_MONTH-', auto_size_text=True, size=(10, 10), disabled=True, readonly=True),
+                sg.Text(' - '),
+                sg.Input(str(dtm.date.today().year), key='-INPUT_START_YEAR-', size=(15, 1), disabled=True, enable_events=True),
+                sg.Text('   '),
+                sg.Combo(hours, hours[0], enable_events=True, key='-CB_START_HOUR-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' : '),
+                sg.Combo(mins_secs, mins_secs[0], enable_events=True, key='-CB_START_MIN-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' : '),
+                sg.Combo(mins_secs, mins_secs[0], enable_events=True, key='-CB_START_SEC-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True)
+            ]
+        )
+
+        layout.append([sg.Checkbox("Podaj końcową datę (dd-mm-yyyy  hh-mm-ss)", key="-END_DATE-", enable_events=True)])
+        layout.append(
+            [
+                sg.Combo(days, days[0], enable_events=True, key='-CB_END_DAY-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' - '),
+                sg.Combo(months, months[0], enable_events=True, key='-CB_END_MONTH-', auto_size_text=True, size=(10, 10), disabled=True, readonly=True),
+                sg.Text(' - '),
+                sg.Input(str(dtm.date.today().year), key='-INPUT_END_YEAR-', size=(15, 1), disabled=True, enable_events=True),
+                sg.Text('   '),
+                sg.Combo(hours, hours[0], enable_events=True, key='-CB_END_HOUR-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' : '),
+                sg.Combo(mins_secs, mins_secs[0], enable_events=True, key='-CB_END_MIN-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True),
+                sg.Text(' : '),
+                sg.Combo(mins_secs, mins_secs[0], enable_events=True, key='-CB_END_SEC-', auto_size_text=True, size=(4, 10), disabled=True, readonly=True)
+            ]
+        )

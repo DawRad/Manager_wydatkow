@@ -119,7 +119,7 @@ class Interfejs:
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweWartZKol(nazwy_tab, nazwa_kol)
     
-    def podajDaneDoWykresu(self, tabs: list(), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False):
+    def podajDaneDoWykresu(self, tabs: list(), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False, start_date = None, end_date = None):
         """ Podaje odpowiednie dane do wyrysowania wykresu.
 
         W zależności od tego, jakie parametry podano, dane mogą uwzględniać zliczone 
@@ -151,5 +151,5 @@ class Interfejs:
             - druga zawiera dane
         """
 
-        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoWykresu(tabs, kol_etykiet, kol_wart, etykiety_kol, sumuj)
+        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoWykresu(tabs, kol_etykiet, kol_wart, etykiety_kol, sumuj, start_date, end_date)
         return [list(res.keys()), list(res.values())]
