@@ -3,6 +3,7 @@ import PySimpleGUI as sg
 import os
 import datetime as dtm
 import calendar as cld
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg as FigCanvTk
 
@@ -583,15 +584,20 @@ class MainWindow:
     
     def createBarPlot(self, x, y):
         # Tworzenie wykresu słupkowego
-        plt.bar(x[0], y[0], label='Serie 1')
-        plt.bar(x[0], y[1], label='Serie 2')
-
-        # Dodanie legendy
-        plt.legend()
-
+        X_axis = np.arange(len(x[0]))
+  
+        plt.bar(X_axis - 0.2, y[0], 0.4, label = 'Wydatki')
+        plt.bar(X_axis + 0.2, y[1], 0.4, label = 'Przychody')
+        
+        plt.xticks(X_axis, x[0], rotation=90)
         # Dodanie etykiet osi
         plt.xlabel('Miesiące')
         plt.ylabel('Wartości')
+        plt.title("Bilans wydatków i przychodów")
+        plt.legend()
+
+        # Dodanie legendy
+        plt.legend()        
 
         return plt.gcf()
     

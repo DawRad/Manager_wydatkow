@@ -1,4 +1,5 @@
 from Fundamenty import *
+import numpy as np
 
 class Interfejs:
     """ Klasa zarządzająca obiektami z modułu `<Fundamenty>`

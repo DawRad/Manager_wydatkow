@@ -299,6 +299,12 @@ class Posiadacz(Obiekt):
         tmp = self.__tabPrzychody_.podajDaneDoBilansu(freq, start_date, end_date)
         for key in tmp.keys(): res_przychody[key] = (res_przychody[key] + tmp[key]) if res_przychody.get(key, None) is not None else tmp[key]
 
+        for key in res_wydatki.keys():
+            if res_przychody.get(key, None) is None: res_przychody[key] = 0.0
+
+        for key in res_przychody.keys():
+            if res_wydatki.get(key, None) is None: res_wydatki[key] = 0.0
+
         return res_wydatki, res_przychody
     
     def dodajTab(self, tabela: TabWydatki):
