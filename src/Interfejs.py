@@ -1,4 +1,5 @@
 from Fundamenty import *
+import numpy as np
 
 class Interfejs:
     """ Klasa zarządzająca obiektami z modułu `<Fundamenty>`
@@ -30,14 +31,16 @@ class Interfejs:
     '''
     Parametr polacz - łączy z istniejąca tabelą, jeśli 'True', w przeciwnym razie dodaje nową tabelę
     '''
-    def wczytajTabZPliku(self, file_path = "", nazwa_tab = "", data_sep = ';', dec_sep = ',', polacz=False):
+    def wczytajTabZPliku(self, file_path = "", nazwa_tab = "", data_sep = ';', dec_sep = ',', polacz=False, przychody=False):
         if file_path[-4:len(file_path)] == ".csv":             
             read_func = lambda path: pd.read_csv(filepath_or_buffer=path, sep=data_sep, decimal=dec_sep)
         elif file_path[-5:len(file_path)] == ".xlsx": read_func = pd.read_excel
         else: raise BadFileFormatError("Format pliku z tabelą musi mieć rozszerzenie .csv lub .xlsx")
 
         new_df = read_func(file_path)
-        if polacz:
+        if przychody:
+            self.__posiadacze_[self.__actKey_].dodajTabDF(nazwa_tab, new_df, True)
+        elif polacz:
             self.__posiadacze_[self.__actKey_].dolaczDoTab(nazwa_tab, new_df)
         else:
             self.__posiadacze_[self.__actKey_].dodajTabDF(nazwa_tab, new_df)
@@ -119,7 +122,7 @@ class Interfejs:
 
         return self.__posiadacze_[self.__actKey_].podajUnikatoweWartZKol(nazwy_tab, nazwa_kol)
     
-    def podajDaneDoWykresu(self, tabs: list(), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False):
+    def podajDaneDoWykresu(self, tabs: list(), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False, start_date = None, end_date = None):
         """ Podaje odpowiednie dane do wyrysowania wykresu.
 
         W zależności od tego, jakie parametry podano, dane mogą uwzględniać zliczone 
@@ -151,5 +154,9 @@ class Interfejs:
             - druga zawiera dane
         """
 
-        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoWykresu(tabs, kol_etykiet, kol_wart, etykiety_kol, sumuj)
+        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoWykresu(tabs, kol_etykiet, kol_wart, etykiety_kol, sumuj, start_date, end_date)
         return [list(res.keys()), list(res.values())]
+    
+    def podajDaneDoBilansu(self, freq = 'M', start_date = None, end_date = None):
+        res = self.__posiadacze_[self.__actKey_].podajDaneTabelDoBilansu(freq, start_date, end_date)
+        return [list(res[0].keys()), list(res[0].values()), list(res[1].keys()), list(res[1].values())]

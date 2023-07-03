@@ -115,7 +115,7 @@ class TabWydatki(Obiekt):
 
         return res
     
-    def podajDaneTabeliDoWykresu(self, kol_etykiet: str, kol_wart = '', wart_kolumn = [], sumuj = False) -> dict():
+    def podajDaneTabeliDoWykresu(self, kol_etykiet: str, kol_wart = '', wart_kolumn = [], sumuj = False, start_date = None, end_date = None) -> dict():
         """ Zbiera dane z tabeli DataFrame.
 
         Domyślnie dane są używane w rysowaniu wykresów.
@@ -126,10 +126,20 @@ class TabWydatki(Obiekt):
         Słownik, w którym: unikalne wartości to klucze, odpowiadające im zliczenia lub sumy wartości to wartości słownika.
         """
 
+        # Uwzględnienie przedziału czasowego, w którym są analizowane dane - przedział może być zarówno obustronnie, jak i jednostronnie domknięty
+        if start_date is not None and end_date is not None:
+            target_tab = self._tabela_[(self._tabela_["Data"] >= start_date) & (self._tabela_["Data"] <= end_date)]
+        elif start_date is not None:
+            target_tab = self._tabela_[self._tabela_["Data"] >= start_date]
+        elif end_date is not None:
+            target_tab = self._tabela_[self._tabela_["Data"] <= end_date]
+        else:
+            target_tab = self._tabela_
+
         res = {}
         if not sumuj:
             # tu zliczane są tylko wystąpienia unikalnych wartości z kolumny etykiet
-            res = self._tabela_[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else self._tabela_[self._tabela_[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
+            res = target_tab[kol_etykiet].value_counts() if len(wart_kolumn) == 0 else target_tab[target_tab[kol_etykiet].isin(wart_kolumn)][kol_etykiet].value_counts()
             res_keys, res_values = res.index.tolist(), res.values.tolist()
             res = dict[str, int]()
             for key, value in zip(res_keys, res_values): res[key] = value
@@ -138,11 +148,29 @@ class TabWydatki(Obiekt):
             res = dict[str, float]()
             if len(wart_kolumn) == 0:
                 # jeżeli nie ma wybranych wartości kolumny etykiet do uwzględnienia
-                for idx, row in self._tabela_.iterrows(): res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
+                for idx, row in target_tab.iterrows(): res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
             else:
                 # gdy uwzględniamy tylko wybrane wartości kolumny etykiet
-                for idx, row in self._tabela_.iterrows(): 
+                for idx, row in target_tab.iterrows():
                     if row[kol_etykiet] in wart_kolumn: res[row[kol_etykiet]] = (res[row[kol_etykiet]] + row[kol_wart]) if res.get(row[kol_etykiet], None) is not None else row[kol_wart]
+
+        return res
+    
+    def podajDaneDoBilansu(self, freq = 'M', start_date = None, end_date = None):
+        # Uwzględnienie przedziału czasowego, w którym są analizowane dane - przedział może być zarówno obustronnie, jak i jednostronnie domknięty
+        if start_date is not None and end_date is not None:
+            target_tab = self._tabela_[(self._tabela_["Data"] >= start_date) & (self._tabela_["Data"] <= end_date)]
+        elif start_date is not None:
+            target_tab = self._tabela_[self._tabela_["Data"] >= start_date]
+        elif end_date is not None:
+            target_tab = self._tabela_[self._tabela_["Data"] <= end_date]
+        else:
+            target_tab = self._tabela_
+
+        res = dict[str, float]()
+        grouped_data = target_tab.groupby(pd.Grouper(key='Data', freq=freq))
+        for group_name, group_data in grouped_data:
+            res[str(group_name.year) + '-' + str(group_name.month)] = group_data['Kwota'].sum()
 
         return res
     
@@ -207,7 +235,10 @@ class Posiadacz(Obiekt):
     nie istnieje
     '''
     def podajTabDF(self, nazwa_tab: str):
-        tabela = self.__tabWydatki_.get(nazwa_tab, None)
+        if nazwa_tab == 'Przychody':
+            tabela = self.__tabPrzychody_
+        else:
+            tabela = self.__tabWydatki_.get(nazwa_tab, None)
         result = tabela.podajDF() if tabela is not None else pd.DataFrame({'A' : []})
         return result
     
@@ -240,7 +271,7 @@ class Posiadacz(Obiekt):
 
         return res
     
-    def podajDaneTabelDoWykresu(self, nazwy_tab: list[str](), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False) -> dict():
+    def podajDaneTabelDoWykresu(self, nazwy_tab: list[str](), kol_etykiet: str, kol_wart = '', etykiety_kol = [], sumuj = False, start_date = None, end_date = None) -> dict():
         """ Wyszukuje wskazane dane w podanych tabelach.
 
         Domyślnie dane są pobierane dla tworzenia wykresów.
@@ -253,10 +284,28 @@ class Posiadacz(Obiekt):
 
         res = {}
         for nazwa in nazwy_tab: 
-            tmp = self.__tabWydatki_[nazwa].podajDaneTabeliDoWykresu(kol_etykiet, kol_wart, etykiety_kol, sumuj)
+            tmp = self.__tabWydatki_[nazwa].podajDaneTabeliDoWykresu(kol_etykiet, kol_wart, etykiety_kol, sumuj, start_date, end_date)
             for key in tmp.keys(): res[key] = (res[key] + tmp[key]) if res.get(key, None) is not None else tmp[key] 
 
         return res
+    
+    def podajDaneTabelDoBilansu(self, freq = 'M', start_date = None, end_date = None):
+        res_wydatki = {}
+        for tab_name in self.__tabWydatki_.keys():
+            tmp = self.__tabWydatki_[tab_name].podajDaneDoBilansu(freq, start_date, end_date)
+            for key in tmp.keys(): res_wydatki[key] = (res_wydatki[key] + tmp[key]) if res_wydatki.get(key, None) is not None else tmp[key]
+
+        res_przychody = {}
+        tmp = self.__tabPrzychody_.podajDaneDoBilansu(freq, start_date, end_date)
+        for key in tmp.keys(): res_przychody[key] = (res_przychody[key] + tmp[key]) if res_przychody.get(key, None) is not None else tmp[key]
+
+        for key in res_wydatki.keys():
+            if res_przychody.get(key, None) is None: res_przychody[key] = 0.0
+
+        for key in res_przychody.keys():
+            if res_wydatki.get(key, None) is None: res_wydatki[key] = 0.0
+
+        return res_wydatki, res_przychody
     
     def dodajTab(self, tabela: TabWydatki):
         #TODO:
@@ -264,12 +313,17 @@ class Posiadacz(Obiekt):
 
         self.__tabWydatki_[tabela.podajNazwe()] = tabela
 
-    def dodajTabDF(self, nazwa_tab: str, df: pd.DataFrame):
+    def dodajTabDF(self, nazwa_tab: str, df: pd.DataFrame, przychody = False):
         # TODO: 
         #   sprawdzenie, czy element o podanym kluczu już nie istnieje
 
-        new_tab = TabWydatki(nazwa_tab, df=df)
-        self.__tabWydatki_[nazwa_tab] = new_tab
+        if przychody:
+            # for idx, row in df.iterrows():
+            #     self.dodajWierszFinansow(row)
+            self.__tabPrzychody_.dolaczDF(df)
+        else:
+            new_tab = TabWydatki(nazwa_tab, df=df)
+            self.__tabWydatki_[nazwa_tab] = new_tab
 
     '''
     Od tej metody we wszystkich dół:
