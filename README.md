@@ -1,5 +1,5 @@
 # Manager_wydatkow
-The project was prepared within the subject: Python Programming Language. The classes were conducted on the Warsaw University of Technology at Faculty of Mechatronics.
+The project was prepared within the subject: Programming in Python. The classes were conducted at the Faculty of Mechatronics of Warsaw University of Technology.
 
 ## Description
 Application was mainly developed with Python language with usage of Jupyter Notebook code files.
